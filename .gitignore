@@ -117,4 +117,10 @@
 !*.bmm
 !*.xmp
 
-CS202_project.runs
+*.runs
+*.vcd
+*.fst
+*.log
+# *.jou
+*.pb
+*.cache/
