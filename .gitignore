@@ -1,6 +1,6 @@
 # Prerequisites
 *.d
-
+CS202_project.sim
 # Compiled Object files
 *.slo
 *.lo
@@ -122,3 +122,4 @@
 *.jou
 *.pb
 *.cache/
+CS202_project.sim
