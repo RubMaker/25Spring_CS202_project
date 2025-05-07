@@ -22,6 +22,7 @@
 `define SWCH_WIDTH     7:0
 `define BHT_WIDTH      1:0
 `define MUL_WIDTH     63:0
+// `define CACHE_WIDTH    4:0
 // Opcode
 `define ART_LOG_OP 7'b0110011  // R type
 `define ART_IMM_OP 7'b0010011  // I type
