@@ -73,3 +73,5 @@
 *.pb
 *.cache/
 CS202_project.sim
+CS202_project.ip_user_files/
+CS202_project.srcs/sources_1/ip/
