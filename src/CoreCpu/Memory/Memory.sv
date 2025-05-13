@@ -44,7 +44,7 @@ module Memory(
     logic IsMMIO;//1 MMIO, 0 Memory
     logic IsExcept;
     logic EnWB;
-    assign EnWB = EnableWriteB & ~IsMMIO;
+    
 
     Mem mem_inst(
         .clka(~clkA),
@@ -88,10 +88,11 @@ module Memory(
         .ColorOut(ColorOut)
     );
 
-    assign IsMMIO = (AddressB[31:16] == 16h'ffff);
-    assign IsExcept = (AddressB[31:16] == 16h'1c09);
+    assign IsMMIO = (AddressB[31:16] == 16'hffff);
+    assign IsExcept = (AddressB[31:16] == 16'h1c09);
     assign ReadDataB = IsMMIO ? DataIo : ReDataB;
     assign ReadDataA = IsExcept ? ExpData : ReDataA;
+    assign EnWB = EnableWriteB & ~IsMMIO;
 
     
 endmodule
