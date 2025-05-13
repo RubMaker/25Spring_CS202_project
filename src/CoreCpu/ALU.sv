@@ -23,7 +23,7 @@
 module ALU(
     input logic [`DATA_WIDTH] InputA,           // First operand
     input logic [`DATA_WIDTH] InputB,           // Second operand
-    input logic [`AlUOP_WIDTH] AluOperation,        // ALU operation control
+    input logic [`ALUOP_WIDTH] AluOperation,        // ALU operation control
     output logic [`DATA_WIDTH] Result     // Result of operation
 );
 
@@ -75,4 +75,5 @@ module ALU(
     end
 
 endmodule
+
 
