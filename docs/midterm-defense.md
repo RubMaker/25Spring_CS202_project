@@ -231,24 +231,127 @@ module Top (
 
 ### 单周期CPU
 
-              [冯·诺依曼架构单周期CPU]
-                 +-----------------+
-                 | Unified Memory  |
-                 | (Instr + Data)  |
-                 +--------+--------+
-                          | addr_bus[31:0]
-                          | data_bus[31:0] (双向)
-                          v
-                          +---------+       +------------+     +------------+     +------------+
-    |   PC    +------> RegFile    +----->    ALU     +-----> Control Unit|
-    +----+----+  |   +------------+     +------+-----+     +------+-----+
-         ^        |         ^                     |               |
-         |        |         | reg_wdata           | mem_wdata     | mem_rdata
-         |        +---------+---------------------+---------------+
-         |                  |                     
-         +------------------+                     
-              Branch Logic (需支持数据地址跳转)
+    Single - Cycle CPU Architecture
+    
+    Instruction Memory
+    ||
+    || Fetch
+    \/
+    Instruction Decode and Register File Read
+    ||
+    || Decode and Read
+    \/
+    ALU / Branch Handling
+    ||
+    || Execute and Branch
+    \/
+    Memory Access
+    ||
+    || Memory
+    \/
+    Write Back to Register File
 
 ### 5-stage Pipeline
 
 ![image-20250513123648752](./images/midterm-pipeline.png)
+
+## C P U 指 令 与 控 制 信 号
+
+
+
+## 项 目 代 码 以 及 已 搭 建 的 测 试 场 景
+
+### ALU
+
+#### 项目代码
+
+```verilog
+module ALU(
+    input logic [`DATA_WIDTH] InputA,           // First operand
+    input logic [`DATA_WIDTH] InputB,           // Second operand
+    input logic [`ALUOP_WIDTH] AluOperation,        // ALU operation control
+    output logic [`DATA_WIDTH] Result     // Result of operation
+);
+
+    // 定义 64 位乘法结果变量
+    logic [63:0] Mul;
+
+    always_comb begin
+        // 初始化乘法结果和运算结果
+        Mul = 64'h0000_0000_0000_0000;
+        Result = {`DATA_LENGTH{1'b0}};
+
+        unique case (AluOperation)
+            `ALU_ADD:  Result = InputA + InputB;
+            `ALU_SUB:  Result = InputA - InputB;
+            `ALU_AND:  Result = InputA & InputB;
+            `ALU_OR:   Result = InputA | InputB;
+            `ALU_XOR:  Result = InputA ^ InputB;
+            `ALU_SLL:  Result = InputA <<  InputB[4:0];   // Shift left logical
+            `ALU_SRL:  Result = InputA >>  InputB[4:0];   // Shift right logical
+            `ALU_SRA:  Result = $signed(InputA) >>>  InputB[4:0]; // Shift right arithmetic
+            `ALU_SLT:  Result = ($signed(InputA) < $signed(InputB)) ? 1 : {`DATA_LENGTH{1'b0}}; // Set less than (signed)
+            `ALU_SLTU: Result = (InputA < InputB) ? 1 : {`DATA_LENGTH{1'b0}}; // Set less than unsigned
+            // `ALU_LUI:  Result = InputB;      // Load upper immediate
+            // `ALU_NOR:  Result = ~(a | b);
+            `ALU_MUL: begin
+                Mul = $signed(InputA) * $signed(InputB);
+                Result = Mul[31:0];
+            end
+            `ALU_MULH: begin
+                Mul = $signed(InputA) * $signed(InputB);
+                Result = Mul[63:32];
+            end
+            `ALU_MULHSU: begin
+                logic signed [63:0] SignedInputAExt = {{32{InputA[31]}}, InputA};       
+                logic unsigned [63:0] UnsignedInputBExt = $signed({32'b0, InputB});   
+                logic signed [127:0] FullMul = SignedInputAExt * UnsignedInputBExt;
+                // Mul = $signed(InputA) * $unsigned(InputB);
+                // Result = $signed(Mul[63:32]); 
+                Result = $signed(FullMul[63:32]); 
+            end
+            `ALU_MULHU: begin
+                Mul = $unsigned(InputA) * $unsigned(InputB);
+                Result = Mul[63:32];
+            end
+            `ALU_DIV:  Result = $signed(InputA) / $signed(InputB);
+            `ALU_REM:  Result = $signed(InputA) % $signed(InputB);
+            default:   Result = {`DATA_LENGTH{1'b0}};
+        endcase
+    end
+
+endmodule
+```
+
+#### 测试场景
+
+![](./images/ALU_tb_test.png)
+
+## 开发工具
+
+- **汇编**：
+  - **工具**：[riscv-gnu-toolchain](https://github.com/riscv-collab/riscv-gnu-toolchain)
+  - **简介**：这是一个用于RISC-V架构的GNU编译器工具链。
+- **仿真**：
+  - **工具**：Vivado
+  - **简介**：Vivado是Xilinx公司推出的一款功能强大的EDA工具软件，用于FPGA和ASIC的设计与仿真。
+- **串口**：
+  - **工具**：[UARTAssist](https://github.com/LunaQu4kez/SUSTech_CS202_MineCPU/blob/main/tools/UartAssist.exe) 和 [inst2txt](https://github.com/LunaQu4kez/SUSTech_CS202_MineCPU/blob/main/tools/inst2txt.py)
+  - **UARTAssist**：这是一个用于收发UART信号的工具，UART（通用异步收发传输器）是一种常用的串行通信协议，广泛应用于嵌入式系统中用于设备之间的数据传输。
+  - **inst2txt**：这个工具用于将指令机器码文件转换为UARTAssist能够传输的16进制文本格式。
+
+## 项目进度
+
+- 已完成了CPU的基本架构设计和核心部件的编码实现。
+- 完成了部分指令的测试和验证工作。
+- 已搭建起初步的硬件测试平台，能够通过串口工具与FPGA硬件进行通信，将指令发送到硬件上执行并观察结果。
+
+## 当前困难
+
+- **复杂指令的实现与优化**：对于一些较为复杂指令（如乘法、除法指令）的实现，目前还存在一定的性能瓶颈，执行效率有待提高。
+- **硬件资源限制**：在FPGA硬件平台上，由于资源有限，可能会对CPU设计的规模和复杂度产生限制。
+- **测试的全面性和准确性**：随着项目规模的扩大，如何确保测试用例的全面性和测试结果的准确性变得越来越困难。可能存在一些隐性的错误或边界情况未被覆盖到。
+
+## 预计答辩时间
+
+第16周实验课
