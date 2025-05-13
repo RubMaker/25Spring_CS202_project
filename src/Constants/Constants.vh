@@ -24,17 +24,17 @@
 `define MUL_WIDTH     63:0
 // `define CACHE_WIDTH    4:0
 // Opcode
-`define ART_LOG_OP 7'b0110011  // R type
-`define ART_IMM_OP 7'b0010011  // I type
-`define LOAD_OP    7'b0000011  // I type
-`define STORE_OP   7'b0100011  // S type for sb, sh, sw, I type for sd
-`define BRANCH_OP  7'b1100011  // B type (SB type)
-`define JALR_OP    7'b1100111  // I type
-`define JAL_OP     7'b1101111  // J type (UJ type)
-`define LUI_OP     7'b0110111  // U type
-`define AUIPC_OP   7'b0010111  // U type
-`define ECALL_OP   7'b1110011  // I type
-`define SRET_OP    7'b0001000
+`define ART_LOG_OPERATION 7'b0110011  // R type
+`define ART_IMM_OPERATION 7'b0010011  // I type
+`define LOAD_OPERATION    7'b0000011  // I type
+`define STORE_OPERATION   7'b0100011  // S type for sb, sh, sw, I type for sd
+`define BRANCH_OPERATION  7'b1100011  // B type (SB type)
+`define JALR_OPERATION    7'b1100111  // I type
+`define JAL_OPERATION     7'b1101111  // J type (UJ type)
+`define LUI_OPERATION     7'b0110111  // U type
+`define AUIPC_OPERATION   7'b0010111  // U type
+`define ECALL_OPERATION   7'b1110011  // I type
+`define SRET_OPERATION    7'b0001000
 // ALU Control lines
 `define ALU_AND    4'b0000
 `define ALU_OR     4'b0001
@@ -91,14 +91,14 @@
 `define BRU_GEU    3'b110
 `define BRU_JMP    3'b111
 // Load Store op
-`define LB_OP      3'b000
-`define LH_OP      3'b001
-`define LW_OP      3'b010
-`define LBU_OP     3'b011
-`define LHU_OP     3'b100
-`define SB_OP      3'b101
-`define SH_OP      3'b110
-`define SW_OP      3'b111
+`define LB_OPERATION      3'b000
+`define LH_OPERATION      3'b001
+`define LW_OPERATION      3'b010
+`define LBU_OPERATION     3'b011
+`define LHU_OPERATION     3'b100
+`define SB_OPERATION      3'b101
+`define SH_OPERATION      3'b110
+`define SW_OPERATION      3'b111
 // Address and gp register
 `define MMIO_ADDR  32'hffffff00
 `define STAK_ADDR  32'h00007ffc
