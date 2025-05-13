@@ -50,6 +50,7 @@
 - 时钟信号直接使用clk进行表示
 - 重置信号使用 reset表示
 - 运算器直接使用ALU表示
+- 内存映射输入输出模块用MMIO表示
 
 #### 禁止项
 
@@ -257,7 +258,19 @@ module Top (
 
 ## C P U 指 令 与 控 制 信 号
 
+### 5. CPU指令与控制信号的关系
 
+| 指令类型                      | Branch | ALUOp    | ALUSrc | MemRead | MemWrite | MemtoReg | RegWrite |
+| ----------------------------- | ------ | -------- | ------ | ------- | -------- | -------- | -------- |
+| **R型指令**<br>(add, sub等)   | 0      | 类型决定 | 0      | 0       | 0        | 0        | 1        |
+| **I型指令**<br>(addi, subi等) | 0      | 具体运算 | 1      | 0       | 0        | 0        | 1        |
+| **Load指令**<br>(lw)          | 0      | 0        | 1      | 1       | 0        | 1        | 1        |
+| **Store指令**<br>(sw)         | 0      | 0        | 1      | 0       | 1        | 0        | 0        |
+| **B型指令**<br>(beq等)        | 1      | 具体运算 | 0      | 0       | 0        | 0        | 0        |
+| **J型指令**<br>(jal)          | 1      | -        | 1      | 0       | 0        | 0        | 1        |
+| **JALR指令**                  | 1      | 0        | 0      | 0       | 0        | 0        | 1        |
+| **LUI指令**                   | 0      | 0        | 1      | 0       | 0        | 0        | 1        |
+| **AUIPC指令**                 | 0      | 1        | 1      | 0       | 0        | 0        | 1        |
 
 ## 项 目 代 码 以 及 已 搭 建 的 测 试 场 景
 
@@ -329,6 +342,8 @@ endmodule
 
 ## 开发工具
 
+rara+asm file->txt file+rars2coe->coe file+vivado->write in CPU
+
 - **汇编**：
   - **工具**：[riscv-gnu-toolchain](https://github.com/riscv-collab/riscv-gnu-toolchain)
   - **简介**：这是一个用于RISC-V架构的GNU编译器工具链。
@@ -341,6 +356,8 @@ endmodule
   - **inst2txt**：这个工具用于将指令机器码文件转换为UARTAssist能够传输的16进制文本格式。
 
 ## 项目进度
+
+大约40%
 
 - 已完成了CPU的基本架构设计和核心部件的编码实现。
 - 完成了部分指令的测试和验证工作。
