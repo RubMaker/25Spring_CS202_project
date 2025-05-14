@@ -60,31 +60,6 @@
 
 ### 注释要求
 
-#### 文件头注释
-
-```verilog
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 05/06/2025 03:27:30 PM
-// Design Name: 
-// Module Name: MemoryAccessState
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
-```
-
 #### 接口注释
 
 对于每个模块，使用单行注释表明每个input 和 output信号的含义。
