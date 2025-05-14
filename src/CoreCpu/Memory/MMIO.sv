@@ -34,7 +34,7 @@ module MMIO(
     output logic [`DATA_WIDTH] Seg1Out,
     output logic [`LED_WIDTH ] Led1Out, Led2Out,
     // VGA-related signals
-    input  logic [`VGA_ADDR] VgaAddress,
+    input  logic [`VGA_ADDRESS] VgaAddress,
     output logic [`INFO_WIDTH] CharOut,
     output logic [`INFO_WIDTH] ColorOut,
     // Signals interacting with Memory module

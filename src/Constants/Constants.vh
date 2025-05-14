@@ -100,14 +100,14 @@
 `define SH_OPERATION      3'b110
 `define SW_OPERATION      3'b111
 // Address and gp register
-`define MMIO_ADDR  32'hffffff00
-`define STAK_ADDR  32'h00007ffc
-`define EXCP_ADDR  32'h1c090000
+`define MMIO_ADDRESS  32'hffffff00
+`define STAK_ADDRESS  32'h00007ffc
+`define EXCP_ADDRESS  32'h1c090000
 // VGA
 `define INFO_WIDTH   7:0
 `define INFO_NUM   0:3071  // 96*32
 `define COLOR_WIDTH  3:0
-`define VGA_ADDR  11:0
+`define VGA_ADDRESS  11:0
 `define H_SYNC_PULSE 11'd128
 `define H_BACK_PORCH 11'd88
 `define H_ACTIVE_TIME 11'd800
