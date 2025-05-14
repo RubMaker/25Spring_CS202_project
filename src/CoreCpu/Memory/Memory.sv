@@ -30,7 +30,7 @@ module Memory(
     input logic [`SWCH_WIDTH] Switch1, Switch2,  // Input switches (MMIO)
     input logic Button1, Button2,               // Input buttons (MMIO)
     input logic Button3, Button4, Button5,       // Input buttons (MMIO)
-    input logic [`VGA_ADDR] VgaAddress,          // VGA display address (MMIO)
+    input logic [`VGA_ADDRESS] VgaAddress,          // VGA display address (MMIO)
     output logic [`DATA_WIDTH] Seg1Out,          // 7-segment display output (MMIO)
     output logic [`LED_WIDTH] Led1Out, Led2Out,  // LED outputs (MMIO)
     output logic [`INFO_WIDTH] CharOut,          // VGA character output (MMIO)
