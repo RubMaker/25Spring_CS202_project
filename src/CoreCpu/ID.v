@@ -23,9 +23,9 @@ module ID (
     output reg         MemRead,     // Memory read enable
     output reg         MemWrite,    // Memory write enable
     output reg         Branch,      // Branch instruction flag
-    output reg [3:0]   ALU_op,      // ALU operation control signal
-    output reg [2:0]   BRU_op,      // Branch unit control signal
-    output reg [2:0]   LS_op        // Load/Store operation control signal
+    output reg [3:0]   AluOperation,      // ALU operation control signal
+    output reg [2:0]   BruOperation,      // Branch unit control signal
+    output reg [2:0]   LoadStoreOperation        // Load/Store operation control signal
 );
 
     always @(*) begin
@@ -43,158 +43,158 @@ module ID (
         MemRead   = 1'b0;
         MemWrite  = 1'b0;
         Branch    = 1'b0;
-        ALU_op    = `ALU_ADD;  
-        BRU_op    = `BRU_NOP;
-        LS_op     = 3'd0;      
+        AluOperation    = `ALU_ADD;  
+        BruOperation    = `BRU_NOP;
+        LoadStoreOperation     = 3'd0;      
 
         // Decode instruction based on opcode (Inst[6:0])
         case (Inst[6:0])
             // R-type: Arithmetic/Logical operations
-            `ART_LOG_OP: begin
+            `ART_LOG_OPERATION: begin
                 RegWrite = 1'b1;
                 ALUSrc   = 1'b0;
                 if (Inst[31:25] == 7'b0000001) begin  // Multiply/Divide instructions
                     case (Inst[14:12])
-                        `MUL_FUNC3:    ALU_op = `ALU_MUL;
-                        `MULH_FUNC3:   ALU_op = `ALU_MULH;
-                        `MULHSU_FUNC3: ALU_op = `ALU_MULHSU;
-                        `MULHU_FUNC3:  ALU_op = `ALU_MULHU;
-                        `DIV_FUNC3:    ALU_op = `ALU_DIV;
-                        `REM_FUNC3:    ALU_op = `ALU_REM;
-                        default:       ALU_op = `ALU_ADD;
+                        `MUL_FUNC3:    AluOperation = `ALU_MUL;
+                        `MULH_FUNC3:   AluOperation = `ALU_MULH;
+                        `MULHSU_FUNC3: AluOperation = `ALU_MULHSU;
+                        `MULHU_FUNC3:  AluOperation = `ALU_MULHU;
+                        `DIV_FUNC3:    AluOperation = `ALU_DIV;
+                        `REM_FUNC3:    AluOperation = `ALU_REM;
+                        default:       AluOperation = `ALU_ADD;
                     endcase
                 end else begin
                     case (Inst[14:12])
                         `ADD_FUNC3: begin
                             if (Inst[31:25] == 7'b0100000)
-                                ALU_op = `ALU_SUB;
+                                AluOperation = `ALU_SUB;
                             else
-                                ALU_op = `ALU_ADD;
+                                AluOperation = `ALU_ADD;
                         end
-                        `SLL_FUNC3: ALU_op = `ALU_SLL;
-                        `SLT_FUNC3: ALU_op = `ALU_SLT;
-                        `SLTU_FUNC3: ALU_op = `ALU_SLTU;
-                        `XOR_FUNC3: ALU_op = `ALU_XOR;
+                        `SLL_FUNC3: AluOperation = `ALU_SLL;
+                        `SLT_FUNC3: AluOperation = `ALU_SLT;
+                        `SLTU_FUNC3: AluOperation = `ALU_SLTU;
+                        `XOR_FUNC3: AluOperation = `ALU_XOR;
                         `SRL_FUNC3: begin
                             if (Inst[31:25] == 7'b0100000)
-                                ALU_op = `ALU_SRA;
+                                AluOperation = `ALU_SRA;
                             else
-                                ALU_op = `ALU_SRL;
+                                AluOperation = `ALU_SRL;
                         end
-                        `OR_FUNC3:  ALU_op = `ALU_OR;
-                        `AND_FUNC3: ALU_op = `ALU_AND;
-                        default:    ALU_op = `ALU_ADD;
+                        `OR_FUNC3:  AluOperation = `ALU_OR;
+                        `AND_FUNC3: AluOperation = `ALU_AND;
+                        default:    AluOperation = `ALU_ADD;
                     endcase
                 end
             end
             // I-type Arithmetic immediate instructions
-            `ART_IMM_OP: begin
+            `ART_IMM_OPERATION: begin
                 RegWrite = 1'b1;
                 ALUSrc   = 1'b1;
                 Imm = {{20{Inst[31]}}, Inst[31:20]};
                 case (Inst[14:12])
-                    `ADD_FUNC3: ALU_op = `ALU_ADD;
-                    `SLL_FUNC3: ALU_op = `ALU_SLL;
-                    `SLT_FUNC3: ALU_op = `ALU_SLT;
-                    `SLTU_FUNC3: ALU_op = `ALU_SLTU;
-                    `XOR_FUNC3: ALU_op = `ALU_XOR;
+                    `ADD_FUNC3: AluOperation = `ALU_ADD;
+                    `SLL_FUNC3: AluOperation = `ALU_SLL;
+                    `SLT_FUNC3: AluOperation = `ALU_SLT;
+                    `SLTU_FUNC3: AluOperation = `ALU_SLTU;
+                    `XOR_FUNC3: AluOperation = `ALU_XOR;
                     `SRL_FUNC3: begin
                         if (Inst[31:25] == 7'b0100000)
-                            ALU_op = `ALU_SRA;
+                            AluOperation = `ALU_SRA;
                         else
-                            ALU_op = `ALU_SRL;
+                            AluOperation = `ALU_SRL;
                     end
-                    `OR_FUNC3:  ALU_op = `ALU_OR;
-                    `AND_FUNC3: ALU_op = `ALU_AND;
-                    default:    ALU_op = `ALU_ADD;
+                    `OR_FUNC3:  AluOperation = `ALU_OR;
+                    `AND_FUNC3: AluOperation = `ALU_AND;
+                    default:    AluOperation = `ALU_ADD;
                 endcase
             end
             // I-type Load instructions
-            `LOAD_OP: begin
+            `LOAD_OPERATION: begin
                 RegWrite  = 1'b1;
                 ALUSrc    = 1'b1;
                 MemtoReg  = 1'b1;
                 MemRead   = 1'b1;
                 Imm = {{20{Inst[31]}}, Inst[31:20]};
-                ALU_op = `ALU_ADD;  // Address calculation
+                AluOperation = `ALU_ADD;  // Address calculation
                 case (Inst[14:12])
-                    `LB_FUNC3:  LS_op = `LB_OP;
-                    `LH_FUNC3:  LS_op = `LH_OP;
-                    `LW_FUNC3:  LS_op = `LW_OP;
-                    `LBU_FUNC3: LS_op = `LBU_OP;
-                    `LHU_FUNC3: LS_op = `LHU_OP;
-                    default:    LS_op = `LW_OP;
+                    `LB_FUNC3:  LoadStoreOperation = `LB_OPERATION;
+                    `LH_FUNC3:  LoadStoreOperation = `LH_OPERATION;
+                    `LW_FUNC3:  LoadStoreOperation = `LW_OPERATION;
+                    `LBU_FUNC3: LoadStoreOperation = `LBU_OPERATION;
+                    `LHU_FUNC3: LoadStoreOperation = `LHU_OPERATION;
+                    default:    LoadStoreOperation = `LW_OPERATION;
                 endcase
             end
             // S-type Store instructions
-            `STORE_OP: begin
+            `STORE_OPERATION: begin
                 ALUSrc   = 1'b1;
                 MemWrite = 1'b1;
                 Imm = {{20{Inst[31]}}, Inst[31:25], Inst[11:7]};
-                ALU_op = `ALU_ADD;  // Address calculation
+                AluOperation = `ALU_ADD;  // Address calculation
                 case (Inst[14:12])
-                    `SB_FUNC3: LS_op = `SB_OP;
-                    `SH_FUNC3: LS_op = `SH_OP;
-                    `SW_FUNC3: LS_op = `SW_OP;
-                    default:   LS_op = `SW_OP;
+                    `SB_FUNC3: LoadStoreOperation = `SB_OPERATION;
+                    `SH_FUNC3: LoadStoreOperation = `SH_OPERATION;
+                    `SW_FUNC3: LoadStoreOperation = `SW_OPERATION;
+                    default:   LoadStoreOperation = `SW_OPERATION;
                 endcase
             end
             // B-type Branch instructions
-            `BRANCH_OP: begin
+            `BRANCH_OPERATION: begin
                 Branch   = 1'b1;
                 ALUSrc   = 1'b0;
                 Imm = {{19{Inst[31]}}, Inst[31], Inst[7], Inst[30:25], Inst[11:8], 1'b0};
                 case (Inst[14:12])
-                    `BEQ_FUNC3:  BRU_op = `BRU_EQ;
-                    `BNE_FUNC3:  BRU_op = `BRU_NE;
-                    `BLT_FUNC3:  BRU_op = `BRU_LT;
-                    `BGE_FUNC3:  BRU_op = `BRU_GE;
-                    `BLTU_FUNC3: BRU_op = `BRU_LTU;
-                    `BGEU_FUNC3: BRU_op = `BRU_GEU;
-                    default:     BRU_op = `BRU_NOP;
+                    `BEQ_FUNC3:  BruOperation = `BRU_EQ;
+                    `BNE_FUNC3:  BruOperation = `BRU_NE;
+                    `BLT_FUNC3:  BruOperation = `BRU_LT;
+                    `BGE_FUNC3:  BruOperation = `BRU_GE;
+                    `BLTU_FUNC3: BruOperation = `BRU_LTU;
+                    `BGEU_FUNC3: BruOperation = `BRU_GEU;
+                    default:     BruOperation = `BRU_NOP;
                 endcase
             end
             // J-type JAL instruction
-            `JAL_OP: begin
+            `JAL_OPERATION: begin
                 RegWrite = 1'b1;
                 ALUSrc   = 1'b1;
-                BRU_op   = `BRU_JMP;  // Unconditional jump
+                BruOperation   = `BRU_JMP;  // Unconditional jump
                 Imm = {{11{Inst[31]}}, Inst[31], Inst[19:12], Inst[20], Inst[30:21], 1'b0};
-                ALU_op   = `ALU_ADD;  // Return address calculation
+                AluOperation   = `ALU_ADD;  // Return address calculation
             end
             // I-type JALR instruction
-            `JALR_OP: begin
+            `JALR_OPERATION: begin
                 RegWrite = 1'b1;
                 ALUSrc   = 1'b1;
-                BRU_op   = `BRU_JMP;
+                BruOperation   = `BRU_JMP;
                 Imm = {{20{Inst[31]}}, Inst[31:20]};
-                ALU_op   = `ALU_ADD;  // Jump target calculation
+                AluOperation   = `ALU_ADD;  // Jump target calculation
             end
             // U-type LUI instruction
-            `LUI_OP: begin
+            `LUI_OPERATION: begin
                 RegWrite = 1'b1;
                 ALUSrc   = 1'b1;
                 Imm = {Inst[31:12], 12'b0};
-                ALU_op   = `ALU_ADD;  // Data pass-through
+                AluOperation   = `ALU_ADD;  // Data pass-through
             end
             // U-type AUIPC instruction
-            `AUIPC_OP: begin
+            `AUIPC_OPERATION: begin
                 RegWrite = 1'b1;
                 ALUSrc   = 1'b1;
                 Imm = {Inst[31:12], 12'b0};
-                ALU_op   = `ALU_ADD;
+                AluOperation   = `ALU_ADD;
             end
             // ECALL: system call, treated as NOP
-            `ECALL_OP: begin
+            `ECALL_OPERATION: begin
                 RegWrite = 1'b0;
                 ALUSrc   = 1'b0;
-                ALU_op   = `ALU_ADD;
+                AluOperation   = `ALU_ADD;
             end
             // SRET: system return, treated as NOP
-            `SRET_OP: begin
+            `SRET_OPERATION: begin
                 RegWrite = 1'b0;
                 ALUSrc   = 1'b0;
-                ALU_op   = `ALU_ADD;
+                AluOperation   = `ALU_ADD;
             end
             default: begin
                 // Default: No Operation
@@ -204,9 +204,9 @@ module ID (
                 MemRead   = 1'b0;
                 MemWrite  = 1'b0;
                 Branch    = 1'b0;
-                ALU_op    = `ALU_ADD;
-                BRU_op    = `BRU_NOP;
-                LS_op     = 3'd0;
+                AluOperation    = `ALU_ADD;
+                BruOperation    = `BRU_NOP;
+                LoadStoreOperation     = 3'd0;
                 Imm       = 32'd0;
             end
         endcase

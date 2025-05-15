@@ -15,7 +15,7 @@ module DCache(
     input  [31:0]    WriteData,      // Data to be written (store instruction)
     input            MemRead,        // Memory read enable
     input            MemWrite,       // Memory write enable
-    input  [2:0]     LS_op,          // Load/Store operation type
+    input  [2:0]     LS_OPERATION,          // Load/Store operation type
     output reg [31:0] DataOut,       // Data output for load instructions
     output reg       Stall,          // Stall signal when cache miss occurs
     // Memory Interface
@@ -49,7 +49,7 @@ module DCache(
   reg [31:0] ReqAddr;
   reg        ReqMemRead;
   reg        ReqMemWrite;
-  reg [2:0]  ReqLS_op;
+  reg [2:0]  ReqLS_OPERATION;
   reg [31:0] ReqWriteData;
 
   // Temporary words.
@@ -84,7 +84,7 @@ module DCache(
     endcase
   end
 
-  // Function: MergeWord â€? merges new data into the original word based on LS_op.
+  // Function: MergeWord ï¿½? merges new data into the original word based on LS_OPERATION.
   function [31:0] MergeWord;
     input [31:0] Orig;       // Original 32-bit word
     input [31:0] NewData;    // New data to be merged
@@ -94,8 +94,8 @@ module DCache(
     reg [7:0]  Byte;
     begin
       case(Op)
-        `SW_OP: MergeWord = NewData;  // SW_OP: full word write
-        `SH_OP: begin                // SH_OP: half-word write
+        `SW_OPERATION: MergeWord = NewData;  // SW_OPERATION: full word write
+        `SH_OPERATION: begin                // SH_OPERATION: half-word write
                  if (ByteSel[1] == 1'b0) begin
                    Half = NewData[15:0];
                    MergeWord = {Orig[31:16], Half};
@@ -104,7 +104,7 @@ module DCache(
                    MergeWord = {Half, Orig[15:0]};
                  end
                end
-        `SB_OP: begin                // SB_OP: byte write
+        `SB_OPERATION: begin                // SB_OPERATION: byte write
                  case(ByteSel)
                    2'b00: MergeWord = {Orig[31:8], NewData[7:0]};
                    2'b01: MergeWord = {Orig[31:16], NewData[7:0], Orig[7:0]};
@@ -118,7 +118,7 @@ module DCache(
     end
   endfunction
 
-  // Function: ExtractWord â€? extracts and sign/zero extends data from a 32-bit word based on LS_op.
+  // Function: ExtractWord ï¿½? extracts and sign/zero extends data from a 32-bit word based on LS_OPERATION.
   function [31:0] ExtractWord;
     input [31:0] Word;
     input [2:0]  Op;
@@ -127,8 +127,8 @@ module DCache(
     reg [15:0] H;
     begin
       case(Op)
-        `LW_OP: ExtractWord = Word;  // LW_OP
-        `LB_OP: begin               // LB_OP (sign-extend)
+        `LW_OPERATION: ExtractWord = Word;  // LW_OPERATION
+        `LB_OPERATION: begin               // LB_OPERATION (sign-extend)
                   case(ByteSel)
                     2'b00: B = Word[7:0];
                     2'b01: B = Word[15:8];
@@ -138,7 +138,7 @@ module DCache(
                   endcase
                   ExtractWord = {{24{B[7]}}, B};
                 end
-        `LBU_OP: begin              // LBU_OP (zero-extend)
+        `LBU_OPERATION: begin              // LBU_OPERATION (zero-extend)
                   case(ByteSel)
                     2'b00: B = Word[7:0];
                     2'b01: B = Word[15:8];
@@ -148,14 +148,14 @@ module DCache(
                   endcase
                   ExtractWord = {24'd0, B};
                 end
-        `LH_OP: begin               // LH_OP (sign-extend)
+        `LH_OPERATION: begin               // LH_OPERATION (sign-extend)
                   if (ByteSel[1] == 1'b0)
                     H = Word[15:0];
                   else
                     H = Word[31:16];
                   ExtractWord = {{16{H[15]}}, H};
                 end
-        `LHU_OP: begin              // LHU_OP (zero-extend)
+        `LHU_OPERATION: begin              // LHU_OPERATION (zero-extend)
                   if (ByteSel[1] == 1'b0)
                     H = Word[15:0];
                   else
@@ -190,7 +190,7 @@ module DCache(
           if (MemRead || MemWrite) begin
             if(Hit) begin
               if(MemRead) begin
-                DataOut <= ExtractWord(CachedWord, LS_op, Addr[1:0]);
+                DataOut <= ExtractWord(CachedWord, LS_OPERATION, Addr[1:0]);
               end
               if(MemWrite) begin
                 case(WordSel)
@@ -200,7 +200,7 @@ module DCache(
                   2'b11: UpdatedWord = Cache[AddrIndex][31:0];
                   default: UpdatedWord = 32'd0;
                 endcase
-                UpdatedWord = MergeWord(UpdatedWord, WriteData, LS_op, Addr[1:0]);
+                UpdatedWord = MergeWord(UpdatedWord, WriteData, LS_OPERATION, Addr[1:0]);
                 case(WordSel)
                   2'b00: Cache[AddrIndex][127:96] <= UpdatedWord;
                   2'b01: Cache[AddrIndex][95:64] <= UpdatedWord;
@@ -219,7 +219,7 @@ module DCache(
               ReqAddr       <= Addr;
               ReqMemRead    <= MemRead;
               ReqMemWrite   <= MemWrite;
-              ReqLS_op      <= LS_op;
+              ReqLS_OPERATION      <= LS_OPERATION;
               ReqWriteData  <= WriteData;
             end
           end else begin
@@ -243,10 +243,10 @@ module DCache(
             Stall <= 1'b0;
             if (ReqMemRead)
               case(ReqAddr[3:2])
-                2'b00: DataOut <= ExtractWord(BlockTemp[127:96], ReqLS_op, ReqAddr[1:0]);
-                2'b01: DataOut <= ExtractWord(BlockTemp[95:64], ReqLS_op, ReqAddr[1:0]);
-                2'b10: DataOut <= ExtractWord(BlockTemp[63:32], ReqLS_op, ReqAddr[1:0]);
-                2'b11: DataOut <= ExtractWord(BlockTemp[31:0], ReqLS_op, ReqAddr[1:0]);
+                2'b00: DataOut <= ExtractWord(BlockTemp[127:96], ReqLS_OPERATION, ReqAddr[1:0]);
+                2'b01: DataOut <= ExtractWord(BlockTemp[95:64], ReqLS_OPERATION, ReqAddr[1:0]);
+                2'b10: DataOut <= ExtractWord(BlockTemp[63:32], ReqLS_OPERATION, ReqAddr[1:0]);
+                2'b11: DataOut <= ExtractWord(BlockTemp[31:0], ReqLS_OPERATION, ReqAddr[1:0]);
                 default: DataOut <= 32'd0;
               endcase
             else if (ReqMemWrite) begin
@@ -257,7 +257,7 @@ module DCache(
                 2'b11: OrigWord = BlockTemp[31:0];
                 default: OrigWord = 32'd0;
               endcase
-              UpdWord = MergeWord(OrigWord, ReqWriteData, ReqLS_op, ReqAddr[1:0]);
+              UpdWord = MergeWord(OrigWord, ReqWriteData, ReqLS_OPERATION, ReqAddr[1:0]);
               case(ReqAddr[3:2])
                 2'b00: Cache[ReqIndex][127:96] <= UpdWord;
                 2'b01: Cache[ReqIndex][95:64] <= UpdWord;
