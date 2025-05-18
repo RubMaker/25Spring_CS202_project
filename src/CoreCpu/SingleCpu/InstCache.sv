@@ -26,8 +26,10 @@ module InstCache (
     input  logic [`DATA_WIDTH] Address,
     output logic [`DATA_WIDTH] Instruction,
     // mem interface
-    input  logic [`DATA_WIDTH] MemInstruction,
-    output logic [`DATA_WIDTH] MemPc
+    input  logic [`DATA_WIDTH] MemInstruction
+    // output logic [`DATA_WIDTH] MemPc,
+    // output logic uncached,
+    // output logic hit
 );
 
     // 格式: valid[46-4] | tag[45-4:32] | data[31:0]（与原设计一致）
@@ -37,7 +39,7 @@ module InstCache (
     logic hit = cache[offset][42] && (cache[offset][41:32] == tag);  // 新增：命中标志
     logic uncached = Address[31:16] == 16'h1c09;            // 未缓存地址标志（与原设计一致）
 
-    assign MemPc = Address;                               // 内存请求地址（与原设计一致）
+    // assign MemPc = Address;                               // 内存请求地址（与原设计一致）
     assign Instruction = uncached ? MemInstruction : (hit ? cache[offset][`DATA_WIDTH] : MemInstruction);  // 单周期选择：未缓存/命中/未命中时直接取内存数据
 
     initial begin

@@ -33,7 +33,12 @@ module CPUSin (
     output logic [`INFO_WIDTH] ColorOut,
     output logic [`DATA_WIDTH] Pc_test,
     output logic [`DATA_WIDTH] Inst_test
+    // output logic [4:0] rs1,rs2,
+    // output logic uncached,
+    // output logic hit
 );
+    assign Pc_test = ThisPc;
+    assign Inst_test = FetchInstr;
     logic [`DATA_WIDTH] NextPc,ThisPc;
     logic [`DATA_WIDTH] MemInstr,MemData;
     logic [`DATA_WIDTH] MemPc,UartMemAddress,UartMemData;
@@ -50,15 +55,17 @@ module CPUSin (
         .clk(clk),
         .reset(reset),
         .PcInput(NextPc),
-        .PcOutput(ThisOut)
+        .PcOutput(ThisPc)
     );
     InstCache icache_sl(
         .clk(clk),
         .reset(reset),
         .Address(ThisPc),
         .MemInstruction(MemInstr),
-        .Instruction(FetchInstr),
-        .MemPc(MemPc)
+        .Instruction(FetchInstr)
+        // .MemPc(MemPc),
+        // .uncached,
+        // .hit
     );
     ImmGenerator imm_sl(
         .Instruction(FetchInstr),
@@ -115,8 +122,8 @@ module CPUSin (
         .Result(AluResult)
     );
     BRUSin Bru_sl(
-        .Source1(rs1),
-        .Source2(rs2),
+        .Source1(Reg1Data),
+        .Source2(Reg2Data),
         .Pc(ThisPc),               // Current instruction PC
         .Immediate(ImmData),                // Immediate value (offset for branch)
         .BRUOperation(BranchOperation),               // Branch operation code (controls comparison type)
@@ -153,7 +160,7 @@ module CPUSin (
         .clkA(memclk),
         .clkB(memclk),
         .reset(reset),
-        .AddressA(MemPc), 
+        .AddressA(ThisPc), 
         .AddressB(UartMemAddress), 
         .WriteData(UartMemData),        
         .EnableWriteB(WriteEnPortB),  
@@ -174,4 +181,4 @@ module CPUSin (
         .CharOut(CharOut),
         .ColorOut(ColorOut)
     );
-endmodule
+endmodule 

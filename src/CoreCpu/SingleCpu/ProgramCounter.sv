@@ -28,14 +28,14 @@ module ProgramCounter(
     output logic [`DATA_WIDTH] PcOutput // Output value of the program counter
     );
     // Program counter register, initialized to 0
-    logic [`DATA_WIDTH] PcReg = 32'h0000_0000; 
+    logic [`DATA_WIDTH] PcReg; 
     // Sequential logic block, triggered on the rising edge of the clock
     always_ff @(posedge clk) begin
         // When the reset signal is active, reset the program counter register to 0
         if (reset) begin
             PcReg <= 32'h0000_0000; 
         // When the program counter write enable signal is active, keep the value of the program counter register unchanged
-        end else if (PcInput) begin
+        end else begin
             PcReg <= PcInput;
         end
     end
@@ -43,3 +43,5 @@ module ProgramCounter(
     // Assign the value of the program counter register to the output port
     assign PcOutput = PcReg; 
 endmodule
+
+

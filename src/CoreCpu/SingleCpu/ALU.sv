@@ -29,11 +29,16 @@ module ALU(
 
     // 定义 64 位乘法结果变量
     logic [63:0] Mul;
-
+    logic signed [63:0] SignedInputAExt;
+    logic unsigned [63:0] UnsignedInputBExt;
+    logic signed [127:0] FullMul;
     always_comb begin
         // 初始化乘法结果和运算结果
         Mul = 64'h0000_0000_0000_0000;
         Result = {`DATA_LENGTH{1'b0}};
+        SignedInputAExt = 0;
+        UnsignedInputBExt = 0;
+        FullMul = 0;
 
         unique case (AluOperation)
             `ALU_ADD:  Result = InputA + InputB;
@@ -57,9 +62,9 @@ module ALU(
                 Result = Mul[63:32];
             end
             `ALU_MULHSU: begin
-                logic signed [63:0] SignedInputAExt = {{32{InputA[31]}}, InputA};       
-                logic unsigned [63:0] UnsignedInputBExt = $signed({32'b0, InputB});   
-                logic signed [127:0] FullMul = SignedInputAExt * UnsignedInputBExt;
+                SignedInputAExt = {{32{InputA[31]}}, InputA};       
+                UnsignedInputBExt = $signed({32'b0, InputB});   
+                FullMul = SignedInputAExt * UnsignedInputBExt;
                 // Mul = $signed(InputA) * $unsigned(InputB);
                 // Result = $signed(Mul[63:32]); 
                 Result = $signed(FullMul[63:32]); 
@@ -74,6 +79,6 @@ module ALU(
         endcase
     end
 
-endmodule
+endmodule 
 
 

@@ -37,6 +37,8 @@ module Memory(
     output logic [`INFO_WIDTH] ColorOut,         // VGA color output (MMIO)
     output logic [`DATA_WIDTH] ReadDataA,        // Read data output for port A
     output logic [`DATA_WIDTH] ReadDataB         // Read data output for port B
+    // output logic IsMMIO,                     // Indicates if the address is MMIO
+    // output logic IsExcept                     // Indicates if the address is an exception
 );
     localparam ADDR_HIGH = 15;
     localparam ADDR_LOW = 2;
@@ -47,20 +49,31 @@ module Memory(
     
     //A only for read
     //B for read and write
-    Mem mem_inst(
+    MemorySim mem_inst(
         .clka(~clkA),
         .clkb(~clkB),
         .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
         .addrb(AddressB[ADDR_HIGH:ADDR_LOW]),
-        .dina(0),
-        .dinb(IsMMIO ? 0 : WriteData),
-        .douta(ReDataA),
-        .doutb(ReDataB),
-        .ena(1),
-        .enb(1),
-        .wea(0),
+        .write_datab(IsMMIO ? 0 : WriteData),
+        .dataa(ReDataA),
+        .datab(ReDataB),
         .web(EnWB)
     );
+
+    // Mem mem_inst(
+    //     .clka(~clkA),
+    //     .clkb(~clkB),
+    //     .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
+    //     .addrb(AddressB[ADDR_HIGH:ADDR_LOW]),
+    //     .dina(0),
+    //     .dinb(IsMMIO ? 0 : WriteData),
+    //     .douta(ReDataA),
+    //     .doutb(ReDataB),
+    //     .ena(1),
+    //     .enb(1),
+    //     .wea(0),
+    //     .web(EnWB)
+    // );
 
     ExpAddressHandler exp_inst(
         .Address(AddressA),
@@ -90,7 +103,7 @@ module Memory(
     );
 
     assign IsMMIO = (AddressB[31:16] == 16'hffff);
-    assign IsExcept = (AddressB[31:16] == 16'h1c09);
+    assign IsExcept = (AddressA[31:16] == 16'h1c09);
     assign ReadDataB = IsMMIO ? DataIo : ReDataB;
     assign ReadDataA = IsExcept ? ExpData : ReDataA;
     assign EnWB = EnableWriteB & ~IsMMIO;
