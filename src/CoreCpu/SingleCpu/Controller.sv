@@ -23,40 +23,36 @@
 
 module Controller(
     input  logic [`DATA_WIDTH] Instruction,        // 32-bit Instructionuction input
-    output logic [`CTRL_WIDTH] CtrlBus      // Composite control signal bus
+    output logic JumpLink,
+    output logic [`BRUOP_WIDTH] BranchOperation,  // Branch unit control
+    output logic [`ALUOP_WIDTH] AluOperation,     // ALU control code
+    // output logic [`ALUSRC_WIDTH] AluSourceSelector,       // ALU operand2 selector    //0 reg, 1 imm, 3 pc+imm, 4 special
+    output logic AluSrc1, //0 rs1 1 pc
+    output logic AluSrc2, //0 rs2 1 imm
+    output logic [`LDST_WIDTH] MemoryOperation,     // Memory access type
+    output logic MemWriteEn,                  // Memory write enable
+    output logic MemReadEn,                  // Memory read enable
+    output logic RegWriteEn,                  // Register write enable
+    output logic Mem2Reg                 // Data memory to register flag
 );
-    // Internal control signals
-    logic        JumpLink;                  // JALR Instructionuction flag
-    logic [`ALUOP_WIDTH]  AluOperation;     // ALU control code
-    logic [`BRUOP_WIDTH]  BranchOperation;  // Branch unit control
-    logic [`ALUSRC_WIDTH] AluSourceSelector;       // ALU operand2 selector    //0 reg, 1 imm, 3 pc+imm, 4 special
-    logic [`LDST_WIDTH]   MemoryOperation;     // Memory access type
-    logic        MemWriteEn;                  // Memory write enable
-    logic        MemReadEn;                  // Memory read enable 
-    logic        RegWriteEn;                  // Register write enable
-    logic        Mem2Reg;                 // Data memory to register flag
-
-    // Stage control bundles
-    logic [`EX_CTRL_WIDTH]  ExStageCtrl;
-    logic [`MEM_CTRL_WIDTH] MemStageCtrl;
-    logic [`WB_CTRL_WIDTH]  WriteBackStageCtrl;
 
     // Instructionuction decoding logic
     always_comb begin : Instruction_decoder
         // Default control values
-        {AluOperation, JumpLink, AluSourceSelector,MemWriteEn, MemReadEn, RegWriteEn, Mem2Reg, MemoryOperation} = 0;
+        {AluOperation, JumpLink, AluSrc1,MemWriteEn, MemReadEn, RegWriteEn, Mem2Reg, MemoryOperation} = 0;
+        AluSrc2 = 1'b1;
         BranchOperation = `BRU_NOP; // Default branch operation
         unique case (Instruction[`OP_WIDTH])
             // Arithmetic/Logical Operations (R-type)
             `ART_LOG_OPERATION: begin
                 RegWriteEn = 1'b1;
+                AluSrc2 = 1'b0; // ALU source 2 is register
                 handle_r_type_operation(Instruction);
             end
             
             // Immediate Arithmetic Operations (I-type)
             `ART_IMM_OPERATION: begin
                 RegWriteEn = 1'b1;
-                AluSourceSelector = 1;
                 decode_imm_arithmetic(Instruction);
             end
             
@@ -66,7 +62,6 @@ module Controller(
                 MemReadEn = 1'b1;
                 Mem2Reg = 1'b1;
                 AluOperation = `ALU_ADD;
-                AluSourceSelector = 1;
                 decode_load_type(Instruction);
             end
             
@@ -74,7 +69,6 @@ module Controller(
             `STORE_OPERATION: begin
                 MemWriteEn = 1'b1;
                 AluOperation = `ALU_ADD;
-                AluSourceSelector = 1;
                 decode_store_type(Instruction);
             end
             
@@ -82,6 +76,7 @@ module Controller(
             `BRANCH_OPERATION: begin
                 decode_branch_type(Instruction);
                 AluOperation = `ALU_ADD;
+                AluSrc1 = 1'b1; // PC + immediate
             end
             
             // Jump and Link Register
@@ -90,29 +85,27 @@ module Controller(
                 BranchOperation = `BRU_JMP;
                 JumpLink = 1'b1;
                 AluOperation = `ALU_ADD;
-                AluSourceSelector = 1;
             end
             
             // Jump and Link
             `JAL_OPERATION: begin
                 RegWriteEn = 1'b1;
+                AluSrc1 = 1'b1; // PC + immediate
                 BranchOperation = `BRU_JMP;
                 AluOperation = `ALU_ADD;
-                AluSourceSelector = 2;
             end
             
             // Load Upper Immediate
             `LUI_OPERATION: begin
                 RegWriteEn = 1'b1;
                 AluOperation = `ALU_ADD;
-                AluSourceSelector = 1;
             end
             
             // Add Upper Immediate to PC
             `AUIPC_OPERATION: begin
                 RegWriteEn = 1'b1;
+                AluSrc1 = 1'b1; // PC + immediate
                 AluOperation = `ALU_ADD;
-                AluSourceSelector = 3;
             end
             
             // Environment Call
@@ -205,11 +198,6 @@ module Controller(
         endcase
     endfunction
 
-    // Control bus composition
-    assign ExStageCtrl  = {JumpLink, BranchOperation, AluOperation, AluSourceSelector};
-    assign MemStageCtrl = {MemoryOperation, MemWriteEn, MemReadEn};
-    assign WriteBackStageCtrl  = {RegWriteEn, Mem2Reg};
-    assign CtrlBus       = {ExStageCtrl, MemStageCtrl, WriteBackStageCtrl};
 
 endmodule
 

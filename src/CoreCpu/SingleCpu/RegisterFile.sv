@@ -42,7 +42,7 @@ module RegisterFile(
         end
     end
 
-    always_ff @(negedge clk) begin 
+    always_ff @(posedge clk) begin 
         if (reset) begin
             Registers[0] = 32'b0; // Register 0 is hardwired to 0
             Registers[1] = 32'b0; // Initialize other Registers to 0

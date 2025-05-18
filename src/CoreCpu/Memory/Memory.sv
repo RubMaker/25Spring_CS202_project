@@ -45,7 +45,8 @@ module Memory(
     logic IsExcept;
     logic EnWB;
     
-
+    //A only for read
+    //B for read and write
     Mem mem_inst(
         .clka(~clkA),
         .clkb(~clkB),
