@@ -30,12 +30,12 @@ module RegisterFile(
     input logic RegWrite,
     output logic [`DATA_WIDTH] ReadData1,ReadData2// data read from Registers
     );
-    reg [`DATA_WIDTH] Registers [0:31];// 32 Registers of 32 bits each
+    reg [`DATA_WIDTH] Registers [0:31] /* verilator public */;// 32 Registers of 32 bits each
 
     initial begin
         Registers[0] = 32'b0; // Register 0 is hardwired to 0
         Registers[1] = 32'b0; // Initialize other Registers to 0
-        Registers[2] = `STAK_ADDRESS;
+        // Registers[2] = `STAK_ADDRESS;
         Registers[3] = `MMIO_ADDRESS;
         for (int i = 4; i < 32; i++) begin
             Registers[i] = 32'b0;

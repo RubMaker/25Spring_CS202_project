@@ -13,14 +13,14 @@ module MemorySim (
     reg [`DATA_WIDTH] mem [16383:0] /*verilator public*/;
     reg [`DATA_WIDTH] dataa_temp;
     reg [`DATA_WIDTH] datab_temp;
-
+    logic [`DATA_WIDTH] ShowData;
+    assign ShowData = mem[14'h0001];
     always_ff @(posedge clka) begin : inst_mem
-        dataa <= dataa_temp;
-        dataa_temp <= mem[addra];
+        dataa <= mem[addra];
     end
 
     always_ff @(posedge clkb) begin : data_mem
-    datab <= datab_temp;
+    datab <= mem[addrb];
         unique if (~web) begin
             datab_temp <= mem[addrb];
         end

@@ -46,12 +46,12 @@ module Memory(
     logic IsMMIO;//1 MMIO, 0 Memory
     logic IsExcept;
     logic EnWB;
-    
+
     //A only for read
     //B for read and write
     MemorySim mem_inst(
-        .clka(~clkA),
-        .clkb(~clkB),
+        .clka(clkA),
+        .clkb(clkB),
         .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
         .addrb(AddressB[ADDR_HIGH:ADDR_LOW]),
         .write_datab(IsMMIO ? 0 : WriteData),
@@ -104,7 +104,7 @@ module Memory(
 
     assign IsMMIO = (AddressB[31:16] == 16'hffff);
     assign IsExcept = (AddressA[31:16] == 16'h1c09);
-    assign ReadDataB = IsMMIO ? DataIo : ReDataB;
+    assign ReadDataB = (IsMMIO ? DataIo : ReDataB);
     assign ReadDataA = IsExcept ? ExpData : ReDataA;
     assign EnWB = EnableWriteB & ~IsMMIO;
 

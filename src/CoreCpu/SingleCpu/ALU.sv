@@ -31,7 +31,9 @@ module ALU(
     logic [63:0] Mul;
     logic signed [63:0] SignedInputAExt;
     logic unsigned [63:0] UnsignedInputBExt;
+    /* verilator lint_off UNUSEDSIGNAL */
     logic signed [127:0] FullMul;
+    /* verilator lint_on UNUSEDSIGNAL */
     always_comb begin
         // 初始化乘法结果和运算结果
         Mul = 64'h0000_0000_0000_0000;

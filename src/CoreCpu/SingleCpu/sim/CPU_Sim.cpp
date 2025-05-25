@@ -52,21 +52,48 @@ int get_value(vpiHandle vh) {
 	return v.value.integer;
 }
 
+// void run_one_cycle() {
+//     top->clk = 1;
+//     top->memclk = 1;
+//     top->eval();
+//     contextp->timeInc(20);
+//     tfp->dump(contextp->time());
+//     top->clk = 0;
+//     top->memclk = 0;
+//     top->eval();
+//     contextp->timeInc(1);
+//     tfp->dump(contextp->time());
+// }
 void run_one_cycle() {
-    top->cpuclk = 1;
-    top->memclk = 1;
-    top->eval();
-    contextp->timeInc(1);
-    tfp->dump(contextp->time());
-    top->cpuclk = 0;
-    top->memclk = 0;
-    top->eval();
-    contextp->timeInc(1);
-    tfp->dump(contextp->time());
+    // 主时钟（clk）高电平期间（10ns），内存时钟（memclk）翻转10次（周期2ns）
+    top->clk = 1;
+    for (int i = 0; i < 10; i++) {  // 10次memclk周期（总10ns）
+        top->memclk = 1;            // memclk上升沿
+        top->eval();
+        contextp->timeInc(1);       // 1ns后翻转
+        top->memclk = 0;            // memclk下降沿
+        top->eval();
+        tfp->dump(contextp->time());
+        contextp->timeInc(1);       // 每个memclk周期2ns
+    }
+
+    // 主时钟（clk）低电平期间（10ns），内存时钟（memclk）继续翻转10次
+    top->clk = 0;
+    for (int i = 0; i < 10; i++) {  // 10次memclk周期（总10ns）
+        top->memclk = 1;            // memclk上升沿
+        top->eval();
+        contextp->timeInc(1);       // 1ns后翻转
+        top->memclk = 0;            // memclk下降沿
+        top->eval();
+        tfp->dump(contextp->time());
+        contextp->timeInc(1);       // 每个memclk周期2ns
+    }
+
+    contextp->timeInc(1);  // 小延迟用于信号稳定
 }
 
 vector<uint32_t> load_program() {
-    vector<char> data = read_binary("../assembly/test_sim/test9.bin"); // modify the path to the binary file
+    vector<char> data = read_binary("/home/wgx/computre_org/project/25Spring_CS202_project/src/Assembly/test_sim/test7.bin"); // modify the path to the binary file
     vector<unsigned int> inst;
     uint32_t concat_data, size = data.size() / 4;
 
@@ -78,8 +105,8 @@ vector<uint32_t> load_program() {
     for(int i = 0; i < size; i++) {
         concat_data = 0;
         for(int j = 3; j >= 0; j--) concat_data = (concat_data << 8) | ((data[4 * i + j]) & 0xff);
-        top->uart_addr = i * 4;
-        top->uart_data = concat_data;
+        top->UartAddress = i * 4;
+        top->UartData = concat_data;
         inst.push_back(concat_data);
         run_one_cycle();
         run_one_cycle();
@@ -102,11 +129,28 @@ bool diff_check() {
 }
 
 void set_device() {
-    top->switches1 = 7;
-    top->switches2 = 4;
-    top->bt1 = 1;
+    top->Switch1 = 7;
+    top->Switch2 = 4;
+    top->Button1 = 1;
 }
-
+void print_all_handles() {
+    // 尝试常见的可能路径
+    const char* possible_paths[] = {
+        "TOP.CPU.pc_sl",
+        "TOP.CPU.pc_sl.pc", 
+        "TOP.CPU.pc_sl.PcReg",
+        "TOP.CPU.PcReg",
+        "VCPU.CPU.pc",
+        "VCPU.CPU.pc_sl.pc",
+        "VCPU.CPU.pc_sl.PcReg",
+        NULL
+    };
+    
+    for(int i = 0; possible_paths[i] != NULL; i++) {
+        vpiHandle vh = vpi_handle_by_name((PLI_BYTE8*)possible_paths[i], NULL);
+        printf("Path: %s -> %s\n", possible_paths[i], vh ? "FOUND" : "NOT FOUND");
+    }
+}
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Verilated::traceEverOn(true);
@@ -127,17 +171,16 @@ int main(int argc, char** argv) {
     uc_reg_write(uc, UC_RISCV_REG_GP, &uc_gp);
 
     // initialize vpi handles
-    pc = get_handle("TOP.CPU.pc_inst.pc");
-    for(int i = 0; i < 32; i++) regs[i] = vpi_handle_by_index(get_handle("TOP.CPU.id_inst.reg_inst.regs"), i);
-    for(int i = 0; i < 16383; i++) mem[i] = vpi_handle_by_index(get_handle("TOP.CPU.memory_inst.test_inst.mem"), i);
-
+    //print_all_handles();
+    for(int i = 0; i < 16383; i++) mem[i] = vpi_handle_by_index(get_handle("TOP.CPU.memory_sl.mem_inst.mem"), i);
+    pc = get_handle("TOP.CPU.pc_sl.PcReg");
+    for(int i = 0; i < 32; i++) regs[i] = vpi_handle_by_index(get_handle("TOP.CPU.regf_sl.Registers"), i);
     long long time = 0, uc_pc = 0;
-
     // load program
-    top->rst_n = 1;
-    top->uart_done = 0;
+    top->reset = 1;
+    top->UartOver = 0;
     vector<uint32_t> inst = load_program();
-    top->uart_done = 1;
+    top->UartOver = 1;
 
     while (uc_pc != inst.size() * 4){
         if(time++ > SIM_TIME) break;

@@ -27,6 +27,7 @@ module BRUSin(
     input logic [`DATA_WIDTH] Immediate,                // Immediate value (offset for branch)
     input logic [`BRUOP_WIDTH] BRUOperation,               // Branch operation code (controls comparison type)
     input logic              Jalr,                 // Jalr instruction flag (whether it is a register jump)
+    input logic reset,
     output logic [`DATA_WIDTH ] NewPc               // Directly output the next instruction PC (no old PC needed for single-cycle)
 );
 
@@ -52,7 +53,7 @@ module BRUSin(
         if (Res) begin
             NewPc = Jalr ? (Source1 + Immediate) : (Pc + Immediate);  // Jump: select address based on Jalr
         end else begin
-            NewPc = Pc + 4;  // No jump: PC+4 (sequential execution)
+            NewPc = (reset) ? Pc : Pc + 4;  // No jump: PC+4 (sequential execution)
         end
     end
 
