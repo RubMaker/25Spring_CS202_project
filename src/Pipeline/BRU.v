@@ -5,7 +5,7 @@
 // Module: BRU
 // Description: Branch Resolution Unit for RISC-V.
 //              Compares RS1Data and RS2Data based on control signal BRUOp to determine
-//              whether a branch should be taken. Computes the updated PC (PrePc).
+//              whether a branch should be taken. Computes the updated PC (renamed to OldPc).
 //////////////////////////////////////////////////////////////////////////////////
 
 module BRU (
@@ -15,7 +15,7 @@ module BRU (
     input  wire [31:0] Pc,        // Current Program Counter value
     input  wire [31:0] Imm,       // Branch offset (immediate), already sign-extended
     output reg         BranchTaken, // '1' if branch condition is met; else '0'
-    output reg [31:0]  NewPc         // Computed updated PC value
+    output reg [31:0]  OldPc         // Computed updated PC value (renamed from NewPc)
 );
 
     /**
@@ -33,11 +33,15 @@ module BRU (
             default:   BranchTaken = 1'b0;
         endcase
 
-        // Update PC: if branch taken, new PC = Pc + Imm; otherwise, Pc + 4.
-        if (BranchTaken)
-            NewPc = Pc + Imm;
-        else
-            NewPc = Pc + 32'd4;
+        // Update PC
+        if (BranchTaken) begin
+            if (BRUOp == `BRU_JMP && Rs1Data != 32'b0)  // JALR case
+                OldPc = Rs1Data + Imm;
+            else
+                OldPc = Pc + Imm;
+        end else begin
+            OldPc = Pc + 32'd4;
+        end
     end
 
 endmodule

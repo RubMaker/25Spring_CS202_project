@@ -1,278 +1,301 @@
-`timescale 1ns / 1ps
-`include "Constants.vh" 
-
-//////////////////////////////////////////////////////////////////////////////////
-// Module: DCache
-// Description: Direct-mapped data cache implementation.
-//              Supports load and store operations with blocking miss handling.
-//////////////////////////////////////////////////////////////////////////////////
+`timescale 1ns/1ps
+`include "Constants.vh"
 
 module DCache(
-    input            clk,            // Clock signal
-    input            rst,            // Reset signal, active high
-    // CPU Interface
-    input  [31:0]    Addr,           // Memory access address (byte address)
-    input  [31:0]    WriteData,      // Data to be written (store instruction)
-    input            MemRead,        // Memory read enable
-    input            MemWrite,       // Memory write enable
-    input  [2:0]     LS_OPERATION,          // Load/Store operation type
-    output reg [31:0] DataOut,       // Data output for load instructions
-    output reg       Stall,          // Stall signal when cache miss occurs
-    // Memory Interface
-    input  [31:0]    MemData,        // Data from external memory
-    output reg [31:0] MemAddr,       // Address sent to memory
-    output reg [31:0] MemWriteData,  // Data sent to memory for writing
-    output reg       MemWe           // Memory write enable, active high
+    input             clk,
+    input             rst,
+    // CPU interface
+    input  [31:0]     Addr,
+    input  [31:0]     WriteData,
+    input             MemRead,
+    input             MemWrite,
+    input  [2:0]      LS_op,
+    output reg [31:0] DataOut,
+    output reg        DStall,
+    // Memory interface
+    input  [31:0]     MemData,
+    output reg [31:0] MemAddr,
+    output reg [31:0] MemWriteData,
+    output reg        MemWb
 );
 
-  // Parameters for cache configuration.
-  localparam INDEX_BITS        = 6;   // 64 blocks -> 6-bit index
-  localparam OFFSET_BITS       = 4;   // 16 bytes per block -> 4-bit offset
-  localparam TAG_BITS          = 32 - INDEX_BITS - OFFSET_BITS; // 22 bits tag
-  localparam BLOCK_SIZE        = 16;  // Block size in bytes
-  localparam WORDS_PER_BLOCK   = BLOCK_SIZE / 4;  // 4 words per block
-  localparam BLOCK_WIDTH       = 1 + TAG_BITS + 128;  // Valid bit + Tag + Data
+  // Parameter definitions
+  localparam INDEX_BITS  = 4;
+  localparam OFFSET_BITS = 2;
+  localparam TAG_BITS    = 32 - INDEX_BITS - OFFSET_BITS;
+  // Cache format: { valid (1 bit), tag (TAG_BITS), data (32 bits) }
+  localparam BLOCK_WIDTH = 1 + TAG_BITS + 32;
 
-  // State machine definitions.
-  localparam S_IDLE  = 2'b00;
-  localparam S_ALLOC = 2'b01;
+  // State machine states
+  localparam STATE_IDLE   = 2'b00;
+  localparam STATE_MISS   = 2'b01;
+  localparam STATE_UPDATE = 2'b10;
+  
+  reg [1:0] state;
 
-  // Cache storage array: one entry per block.
+  // Cache array: total number of cache lines is 2^(INDEX_BITS)
   reg [BLOCK_WIDTH-1:0] Cache [0:(1<<INDEX_BITS)-1];
+  integer i;
+  initial begin
+    for (i = 0; i < (1 << INDEX_BITS); i = i + 1) begin
+      Cache[i] = 0;
+    end
+    state = STATE_IDLE;
+  end
 
-  // State registers.
-  reg [1:0] State;
-  reg [1:0] AllocCounter;       // Counter for block allocation (0 to 3)
-  reg [127:0] BlockTemp;        // Temporary storage for a cache block
+  // Address decoding:
+  // Tag: Addr[31: OFFSET_BITS + INDEX_BITS]
+  // Index: Addr[OFFSET_BITS + INDEX_BITS - 1: OFFSET_BITS]
+  // Offset: Addr[OFFSET_BITS - 1: 0]
+  wire [INDEX_BITS-1:0] index = Addr[OFFSET_BITS + INDEX_BITS - 1: OFFSET_BITS];
+  wire [TAG_BITS-1:0] addr_tag = Addr[31:OFFSET_BITS + INDEX_BITS];
 
-  // Locking request signals for a miss.
-  reg [31:0] ReqAddr;
-  reg        ReqMemRead;
-  reg        ReqMemWrite;
-  reg [2:0]  ReqLS_OPERATION;
-  reg [31:0] ReqWriteData;
+  // Extract valid bit, tag, and data from the selected cache line
+  wire cache_valid = Cache[index][BLOCK_WIDTH-1];
+  wire [TAG_BITS-1:0] cache_tag = Cache[index][BLOCK_WIDTH-2 -: TAG_BITS];
+  wire [31:0] cache_data = Cache[index][31:0];
 
-  // Temporary words.
-  reg [31:0] UpdatedWord;
-  reg [31:0] OrigWord;
-  reg [31:0] UpdWord;
+  // Determine a cache hit: valid must be true and tags must match
+  wire hit = cache_valid && (cache_tag == addr_tag);
 
-  // Parse address into tag, index, and offset.
-  wire [TAG_BITS-1:0] AddrTag = Addr[31:(INDEX_BITS+OFFSET_BITS)];
-  wire [INDEX_BITS-1:0] AddrIndex = Addr[(OFFSET_BITS+INDEX_BITS-1):OFFSET_BITS];
-  wire [OFFSET_BITS-1:0] AddrOffset = Addr[OFFSET_BITS-1:0];
-
-  // For locked request.
-  wire [TAG_BITS-1:0] ReqTag = ReqAddr[31:(INDEX_BITS+OFFSET_BITS)];
-  wire [INDEX_BITS-1:0] ReqIndex = ReqAddr[(OFFSET_BITS+INDEX_BITS-1):OFFSET_BITS];
-  wire [OFFSET_BITS-1:0] ReqOffset = ReqAddr[OFFSET_BITS-1:0];
-
-  // Cache hit condition.
-  wire Hit;
-  assign Hit = Cache[AddrIndex][BLOCK_WIDTH-1] && (Cache[AddrIndex][BLOCK_WIDTH-2 -: TAG_BITS] == AddrTag);
-
-  // Determine which word in the block is targeted.
-  wire [1:0] WordSel = AddrOffset[3:2];
-  reg [31:0] CachedWord;
+  // Process external memory data based on LS_op for load operations
+  reg [31:0] proc_MemData;
   always @(*) begin
-    case(WordSel)
-      2'b00: CachedWord = Cache[AddrIndex][127:96];
-      2'b01: CachedWord = Cache[AddrIndex][95:64];
-      2'b10: CachedWord = Cache[AddrIndex][63:32];
-      2'b11: CachedWord = Cache[AddrIndex][31:0];
-      default: CachedWord = 32'd0;
+    if (MemRead) begin
+      case (LS_op)
+        `LW_OPERATION: proc_MemData = MemData;
+        `LH_OPERATION: begin
+          if (Addr[1])
+            proc_MemData = {{16{MemData[31]}}, MemData[31:16]};
+          else
+            proc_MemData = {{16{MemData[15]}}, MemData[15:0]};
+        end
+        `LHU_OPERATION: begin
+          if (Addr[1])
+            proc_MemData = {16'b0, MemData[31:16]};
+          else
+            proc_MemData = {16'b0, MemData[15:0]};
+        end
+        `LB_OPERATION: begin
+          case (Addr[1:0])
+            2'b00: proc_MemData = {{24{MemData[7]}},  MemData[7:0]};
+            2'b01: proc_MemData = {{24{MemData[15]}}, MemData[15:8]};
+            2'b10: proc_MemData = {{24{MemData[23]}}, MemData[23:16]};
+            2'b11: proc_MemData = {{24{MemData[31]}}, MemData[31:24]};
+            default: proc_MemData = MemData;
+          endcase
+        end
+        `LBU_OPERATION: begin
+          case (Addr[1:0])
+            2'b00: proc_MemData = {24'b0, MemData[7:0]};
+            2'b01: proc_MemData = {24'b0, MemData[15:8]};
+            2'b10: proc_MemData = {24'b0, MemData[23:16]};
+            2'b11: proc_MemData = {24'b0, MemData[31:24]};
+            default: proc_MemData = MemData;
+          endcase
+        end
+        default: proc_MemData = MemData;
+      endcase
+    end
+    else begin
+      proc_MemData = WriteData;
+    end
+  end
+
+  // For store operations on cache hit, merge the new store data with the cache data
+  reg [31:0] updated_data;
+  always @(*) begin
+    if (MemWrite && hit) begin
+      case (LS_op)
+        `SW_OPERATION: updated_data = WriteData;
+        `SH_OPERATION: begin
+          if (Addr[1])
+            updated_data = {WriteData[15:0], cache_data[15:0]};
+          else
+            updated_data = {cache_data[31:16], WriteData[15:0]};
+        end
+        `SB_OPERATION: begin
+          case (Addr[1:0])
+            2'b00: updated_data = {cache_data[31:8], WriteData[7:0]};
+            2'b01: updated_data = {cache_data[31:16], WriteData[7:0], cache_data[7:0]};
+            2'b10: updated_data = {cache_data[31:24], WriteData[7:0], cache_data[15:0]};
+            2'b11: updated_data = {WriteData[7:0], cache_data[23:0]};
+            default: updated_data = WriteData;
+          endcase
+        end
+        default: updated_data = WriteData;
+      endcase
+    end else begin
+      updated_data = WriteData;
+    end
+  end
+  
+  // Temporary variable for processing LS_op in STATE_UPDATE
+  reg [31:0] temp_data;
+  
+  // Combinational logic for output signals based on state and operation
+  always @(*) begin
+    // Default assignments
+    DataOut = 32'b0;
+    MemAddr = 32'b0;
+    MemWriteData = 32'b0;
+    MemWb = 0;
+    DStall = 0;
+    
+    case (state)
+      STATE_IDLE: begin
+        if (MemRead) begin
+          if (hit) begin
+            // Load hit: output the cached data processed by LS_op
+            DStall = 0;
+            case (LS_op)
+              `LW_OPERATION: DataOut = cache_data;
+              `LH_OPERATION: begin
+                if (Addr[1])
+                  DataOut = {{16{cache_data[31]}}, cache_data[31:16]};
+                else
+                  DataOut = {{16{cache_data[15]}}, cache_data[15:0]};
+              end
+              `LHU_OPERATION: begin
+                if (Addr[1])
+                  DataOut = {16'b0, cache_data[31:16]};
+                else
+                  DataOut = {16'b0, cache_data[15:0]};
+              end
+              `LB_OPERATION: begin
+                case (Addr[1:0])
+                  2'b00: DataOut = {{24{cache_data[7]}},  cache_data[7:0]};
+                  2'b01: DataOut = {{24{cache_data[15]}}, cache_data[15:8]};
+                  2'b10: DataOut = {{24{cache_data[23]}}, cache_data[23:16]};
+                  2'b11: DataOut = {{24{cache_data[31]}}, cache_data[31:24]};
+                  default: DataOut = cache_data;
+                endcase
+              end
+              `LBU_OPERATION: begin
+                case (Addr[1:0])
+                  2'b00: DataOut = {24'b0, cache_data[7:0]};
+                  2'b01: DataOut = {24'b0, cache_data[15:8]};
+                  2'b10: DataOut = {24'b0, cache_data[23:16]};
+                  2'b11: DataOut = {24'b0, cache_data[31:24]};
+                  default: DataOut = cache_data;
+                endcase
+              end
+              default: DataOut = cache_data;
+            endcase
+          end else begin
+            // Load miss: initiate a memory request
+            DStall = 1;
+            MemAddr = Addr;
+          end
+        end
+        else if (MemWrite) begin
+          if (hit) begin
+            // Store hit: write-through, output merged data and update memory signals
+            DStall = 0;
+            MemAddr = Addr;
+            MemWriteData = updated_data;
+            MemWb = 1;
+            DataOut = updated_data;
+          end else begin
+            // Store miss: initiate write-allocate request
+            DStall = 1;
+            MemAddr = Addr;
+          end
+        end
+        else begin
+          DStall = 0;
+        end
+      end
+      STATE_MISS: begin
+        // During waiting for memory data, hold Stall high and output address
+        DStall = 1;
+        MemAddr = Addr;
+      end
+      STATE_UPDATE: begin
+        // In update state, memory data has been returned.
+        DStall = 0;
+        if (MemWrite) begin
+          // For store miss update: update the cache using the merged data
+          DataOut = updated_data;
+          MemAddr = Addr;
+          MemWriteData = updated_data;
+          MemWb = 1;
+        end else begin
+          // For load miss update, update the cache with MemData and generate DataOut based on LS_op
+          case (LS_op)
+            `LW_OPERATION: temp_data = proc_MemData;
+            `LH_OPERATION: begin
+              if (Addr[1])
+                temp_data = {{16{proc_MemData[31]}}, proc_MemData[31:16]};
+              else
+                temp_data = {{16{proc_MemData[15]}}, proc_MemData[15:0]};
+            end
+            `LHU_OPERATION: begin
+              if (Addr[1])
+                temp_data = {16'b0, proc_MemData[31:16]};
+              else
+                temp_data = {16'b0, proc_MemData[15:0]};
+            end
+            `LB_OPERATION: begin
+              case (Addr[1:0])
+                2'b00: temp_data = {{24{proc_MemData[7]}}, proc_MemData[7:0]};
+                2'b01: temp_data = {{24{proc_MemData[15]}}, proc_MemData[15:8]};
+                2'b10: temp_data = {{24{proc_MemData[23]}}, proc_MemData[23:16]};
+                2'b11: temp_data = {{24{proc_MemData[31]}}, proc_MemData[31:24]};
+                default: temp_data = proc_MemData;
+              endcase
+            end
+            `LBU_OPERATION: begin
+              case (Addr[1:0])
+                2'b00: temp_data = {24'b0, proc_MemData[7:0]};
+                2'b01: temp_data = {24'b0, proc_MemData[15:8]};
+                2'b10: temp_data = {24'b0, proc_MemData[23:16]};
+                2'b11: temp_data = {24'b0, proc_MemData[31:24]};
+                default: temp_data = proc_MemData;
+              endcase
+            end
+            default: temp_data = proc_MemData;
+          endcase
+          DataOut = temp_data;
+          MemAddr = Addr;
+        end
+      end
+      default: begin
+        DStall = 0;
+        DataOut = 32'b0;
+      end
     endcase
   end
 
-  // Function: MergeWord �? merges new data into the original word based on LS_OPERATION.
-  function [31:0] MergeWord;
-    input [31:0] Orig;       // Original 32-bit word
-    input [31:0] NewData;    // New data to be merged
-    input [2:0]  Op;         // Load/Store operation code
-    input [1:0]  ByteSel;    // Byte select (from Addr[1:0])
-    reg [15:0] Half;
-    reg [7:0]  Byte;
-    begin
-      case(Op)
-        `SW_OPERATION: MergeWord = NewData;  // SW_OPERATION: full word write
-        `SH_OPERATION: begin                // SH_OPERATION: half-word write
-                 if (ByteSel[1] == 1'b0) begin
-                   Half = NewData[15:0];
-                   MergeWord = {Orig[31:16], Half};
-                 end else begin
-                   Half = NewData[15:0];
-                   MergeWord = {Half, Orig[15:0]};
-                 end
-               end
-        `SB_OPERATION: begin                // SB_OPERATION: byte write
-                 case(ByteSel)
-                   2'b00: MergeWord = {Orig[31:8], NewData[7:0]};
-                   2'b01: MergeWord = {Orig[31:16], NewData[7:0], Orig[7:0]};
-                   2'b10: MergeWord = {Orig[31:24], NewData[7:0], Orig[15:0]};
-                   2'b11: MergeWord = {NewData[7:0], Orig[23:0]};
-                   default: MergeWord = Orig;
-                 endcase
-               end
-        default: MergeWord = Orig;
-      endcase
-    end
-  endfunction
-
-  // Function: ExtractWord �? extracts and sign/zero extends data from a 32-bit word based on LS_OPERATION.
-  function [31:0] ExtractWord;
-    input [31:0] Word;
-    input [2:0]  Op;
-    input [1:0]  ByteSel;
-    reg [7:0] B;
-    reg [15:0] H;
-    begin
-      case(Op)
-        `LW_OPERATION: ExtractWord = Word;  // LW_OPERATION
-        `LB_OPERATION: begin               // LB_OPERATION (sign-extend)
-                  case(ByteSel)
-                    2'b00: B = Word[7:0];
-                    2'b01: B = Word[15:8];
-                    2'b10: B = Word[23:16];
-                    2'b11: B = Word[31:24];
-                    default: B = 8'd0;
-                  endcase
-                  ExtractWord = {{24{B[7]}}, B};
-                end
-        `LBU_OPERATION: begin              // LBU_OPERATION (zero-extend)
-                  case(ByteSel)
-                    2'b00: B = Word[7:0];
-                    2'b01: B = Word[15:8];
-                    2'b10: B = Word[23:16];
-                    2'b11: B = Word[31:24];
-                    default: B = 8'd0;
-                  endcase
-                  ExtractWord = {24'd0, B};
-                end
-        `LH_OPERATION: begin               // LH_OPERATION (sign-extend)
-                  if (ByteSel[1] == 1'b0)
-                    H = Word[15:0];
-                  else
-                    H = Word[31:16];
-                  ExtractWord = {{16{H[15]}}, H};
-                end
-        `LHU_OPERATION: begin              // LHU_OPERATION (zero-extend)
-                  if (ByteSel[1] == 1'b0)
-                    H = Word[15:0];
-                  else
-                    H = Word[31:16];
-                  ExtractWord = {16'd0, H};
-                end
-        default: ExtractWord = Word;
-      endcase
-    end
-  endfunction
-  
-  /**
-   * @brief Main state machine for DCache.
-   *        S_IDLE: If a valid CPU request (MemRead/MemWrite) occurs and hits in cache, perform data read/write.
-   *                Otherwise, transition to S_ALLOC to fill a block from memory.
-   *        S_ALLOC: Issue memory read requests to update the cache block, then process the original request.
-   */
-  always @(posedge clk or posedge rst) begin
+  // State machine and cache update
+  always @(posedge clk) begin
     if (rst) begin
-      State         <= S_IDLE;
-      Stall         <= 1'b0;
-      AllocCounter  <= 2'd0;
-      MemAddr       <= 32'd0;
-      MemWe         <= 1'b0;
-      DataOut       <= 32'd0;
-      ReqAddr       <= 32'd0;
+      state <= STATE_IDLE;
+      for (i = 0; i < (1 << INDEX_BITS); i = i + 1) begin
+        Cache[i] <= 0;
+      end
     end else begin
-      case(State)
-        S_IDLE: begin
-          MemWe <= 1'b0;
-          Stall <= 1'b0;
-          if (MemRead || MemWrite) begin
-            if(Hit) begin
-              if(MemRead) begin
-                DataOut <= ExtractWord(CachedWord, LS_OPERATION, Addr[1:0]);
-              end
-              if(MemWrite) begin
-                case(WordSel)
-                  2'b00: UpdatedWord = Cache[AddrIndex][127:96];
-                  2'b01: UpdatedWord = Cache[AddrIndex][95:64];
-                  2'b10: UpdatedWord = Cache[AddrIndex][63:32];
-                  2'b11: UpdatedWord = Cache[AddrIndex][31:0];
-                  default: UpdatedWord = 32'd0;
-                endcase
-                UpdatedWord = MergeWord(UpdatedWord, WriteData, LS_OPERATION, Addr[1:0]);
-                case(WordSel)
-                  2'b00: Cache[AddrIndex][127:96] <= UpdatedWord;
-                  2'b01: Cache[AddrIndex][95:64] <= UpdatedWord;
-                  2'b10: Cache[AddrIndex][63:32] <= UpdatedWord;
-                  2'b11: Cache[AddrIndex][31:0]  <= UpdatedWord;
-                endcase
-                // Write-through to memory
-                MemAddr       <= Addr;
-                MemWriteData  <= WriteData;
-                MemWe         <= 1'b1;
-              end
-            end else begin
-              Stall         <= 1'b1;
-              State         <= S_ALLOC;
-              AllocCounter  <= 2'd0;
-              ReqAddr       <= Addr;
-              ReqMemRead    <= MemRead;
-              ReqMemWrite   <= MemWrite;
-              ReqLS_OPERATION      <= LS_OPERATION;
-              ReqWriteData  <= WriteData;
-            end
-          end else begin
-            MemWe <= 1'b0;
+      case (state)
+        STATE_IDLE: begin
+          if ((MemRead || MemWrite) && !hit)
+            state <= STATE_MISS;
+          else begin
+            // On store hit, update cache synchronously
+            if (MemWrite && hit)
+              Cache[index] <= {1'b1, addr_tag, updated_data};
+            state <= STATE_IDLE;
           end
         end
-        S_ALLOC: begin
-          Stall <= 1'b1;
-          MemWe <= 1'b0;
-          // Compute memory address for block fetch based on AllocCounter.
-          MemAddr <= { ReqAddr[31:OFFSET_BITS], {OFFSET_BITS{1'b0}} } + (AllocCounter << 2);
-          case(AllocCounter)
-            2'd0: BlockTemp[127:96] <= MemData;
-            2'd1: BlockTemp[95:64]  <= MemData;
-            2'd2: BlockTemp[63:32]  <= MemData;
-            2'd3: BlockTemp[31:0]   <= MemData;
-          endcase
-          if (AllocCounter == 2'd3) begin
-            Cache[ReqIndex] <= {1'b1, ReqAddr[31:(INDEX_BITS+OFFSET_BITS)], BlockTemp};
-            State <= S_IDLE;
-            Stall <= 1'b0;
-            if (ReqMemRead)
-              case(ReqAddr[3:2])
-                2'b00: DataOut <= ExtractWord(BlockTemp[127:96], ReqLS_OPERATION, ReqAddr[1:0]);
-                2'b01: DataOut <= ExtractWord(BlockTemp[95:64], ReqLS_OPERATION, ReqAddr[1:0]);
-                2'b10: DataOut <= ExtractWord(BlockTemp[63:32], ReqLS_OPERATION, ReqAddr[1:0]);
-                2'b11: DataOut <= ExtractWord(BlockTemp[31:0], ReqLS_OPERATION, ReqAddr[1:0]);
-                default: DataOut <= 32'd0;
-              endcase
-            else if (ReqMemWrite) begin
-              case(ReqAddr[3:2])
-                2'b00: OrigWord = BlockTemp[127:96];
-                2'b01: OrigWord = BlockTemp[95:64];
-                2'b10: OrigWord = BlockTemp[63:32];
-                2'b11: OrigWord = BlockTemp[31:0];
-                default: OrigWord = 32'd0;
-              endcase
-              UpdWord = MergeWord(OrigWord, ReqWriteData, ReqLS_OPERATION, ReqAddr[1:0]);
-              case(ReqAddr[3:2])
-                2'b00: Cache[ReqIndex][127:96] <= UpdWord;
-                2'b01: Cache[ReqIndex][95:64] <= UpdWord;
-                2'b10: Cache[ReqIndex][63:32] <= UpdWord;
-                2'b11: Cache[ReqIndex][31:0]  <= UpdWord;
-              endcase
-              MemAddr       <= ReqAddr;
-              MemWriteData  <= ReqWriteData;
-              MemWe         <= 1'b1;
-            end
-          end else begin
-            AllocCounter <= AllocCounter + 1;
-          end
+        STATE_MISS: state <= STATE_UPDATE;
+        STATE_UPDATE: begin
+          // Update cache: for load miss, use MemData; for store miss, use updated_data
+          if (MemRead)
+            Cache[index] <= {1'b1, addr_tag, MemData};
+          else if (MemWrite)
+            Cache[index] <= {1'b1, addr_tag, updated_data};
+          state <= STATE_IDLE;
         end
-        default: State <= S_IDLE;
+        default: state <= STATE_IDLE;
       endcase
     end
   end

@@ -1,35 +1,31 @@
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Module: MEM
-// Description: Memory Access stage module.
-//              For load instructions, it fetches data from the DCache.
-//              For others, it passes the ALU result to the next stage.
-//////////////////////////////////////////////////////////////////////////////////
+`timescale 1ns/1ps
+`include "Constants.vh"
 
+//-------------------------------------
+// MEM模块：将 EX 结果与缓存交�?
+//-------------------------------------
 module MEM(
-    input         clk,         // Clock signal
-    input         rst,         // Reset signal, active high
-    // Inputs from EX stage:
-    input  [31:0] AluResult,   // Effective address from EX stage
-    input  [31:0] WriteData,   // Data for store instructions
-    input         MemRead,     // Memory read flag (load)
-    input         MemWrite,    // Memory write flag (store)
-    input  [2:0]  LS_op,       // Load/Store operation type
-    // Outputs to WB stage:
-    output [31:0] Result,      // Data result from cache (for loads) or ALU result
-    output        Stall,       // Stall signal due to DCache miss
-    // External memory interface:
-    input  [31:0] MemData,     
-    output [31:0] MemAddr,     
+    input         clk,
+    input         rst,
+    // 来自 EX 阶段的输�?
+    input  [31:0] AluResult,   // 有效地址�? ALU 计算结果
+    input  [31:0] WriteData,   // store 时写入的数据
+    input         MemRead,     // load 标志
+    input         MemWrite,    // store 标志
+    input  [2:0]  LS_op,       // load/store 操作类型
+    // 输出�? WB 阶段
+    output [31:0] Result,      // load 时为缓存/内存数据；store 时输�? ALU 结果
+    output        DStall,       // DCache 访问引起的停顿信�?
+    // 外部内存接口
+    input  [31:0] MemData,
+    output [31:0] MemAddr,
     output [31:0] MemWriteData,
-    output        MemWe
+    output        MemWb
 );
 
-   // Internal signal for data output from DCache
    wire [31:0] CacheDataOut;
 
-   // Instantiate DCache module for load/store operations.
-   DCache U_DCache (
+   DCache U_DCache(
       .clk(clk),
       .rst(rst),
       .Addr(AluResult),
@@ -38,14 +34,14 @@ module MEM(
       .MemWrite(MemWrite),
       .LS_op(LS_op),
       .DataOut(CacheDataOut),
-      .Stall(Stall),
+      .DStall(DStall),
       .MemData(MemData),
       .MemAddr(MemAddr),
       .MemWriteData(MemWriteData),
-      .MemWe(MemWe)
+      .MemWb(MemWb)
    );
 
-   // For load instructions, forward the data from DCache; otherwise, pass through the ALU result.
-   assign Result = MemRead ? CacheDataOut : AluResult;
+   // load：返回Cache里的数据；store：直接返回ALU结果
+   assign Result = (MemRead ? CacheDataOut : AluResult);
 
 endmodule
