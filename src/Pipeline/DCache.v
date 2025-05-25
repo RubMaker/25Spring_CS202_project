@@ -36,6 +36,8 @@ module DCache(
   // Cache array: total number of cache lines is 2^(INDEX_BITS)
   reg [BLOCK_WIDTH-1:0] Cache [0:(1<<INDEX_BITS)-1];
   integer i;
+  
+  // 初始化 cache 数组与状态
   initial begin
     for (i = 0; i < (1 << INDEX_BITS); i = i + 1) begin
       Cache[i] = 0;
@@ -61,7 +63,10 @@ module DCache(
   // Process external memory data based on LS_op for load operations
   reg [31:0] proc_MemData;
   always @(*) begin
-    if (MemRead) begin
+    if (rst) begin
+      proc_MemData = 32'b0;
+    end
+    else if (MemRead) begin
       case (LS_op)
         `LW_OPERATION: proc_MemData = MemData;
         `LH_OPERATION: begin
@@ -105,7 +110,10 @@ module DCache(
   // For store operations on cache hit, merge the new store data with the cache data
   reg [31:0] updated_data;
   always @(*) begin
-    if (MemWrite && hit) begin
+    if (rst) begin
+      updated_data = 32'b0;
+    end
+    else if (MemWrite && hit) begin
       case (LS_op)
         `SW_OPERATION: updated_data = WriteData;
         `SH_OPERATION: begin
@@ -130,145 +138,132 @@ module DCache(
     end
   end
   
-  // Temporary variable for processing LS_op in STATE_UPDATE
-  reg [31:0] temp_data;
-  
-  // Combinational logic for output signals based on state and operation
+  // 组合逻辑：在 rst 有效时输出默认值，避免 X 值传递
   always @(*) begin
-    // Default assignments
-    DataOut = 32'b0;
-    MemAddr = 32'b0;
-    MemWriteData = 32'b0;
-    MemWb = 0;
-    DStall = 0;
-    
-    case (state)
-      STATE_IDLE: begin
-        if (MemRead) begin
-          if (hit) begin
-            // Load hit: output the cached data processed by LS_op
-            DStall = 0;
-            case (LS_op)
-              `LW_OPERATION: DataOut = cache_data;
-              `LH_OPERATION: begin
-                if (Addr[1])
-                  DataOut = {{16{cache_data[31]}}, cache_data[31:16]};
-                else
-                  DataOut = {{16{cache_data[15]}}, cache_data[15:0]};
-              end
-              `LHU_OPERATION: begin
-                if (Addr[1])
-                  DataOut = {16'b0, cache_data[31:16]};
-                else
-                  DataOut = {16'b0, cache_data[15:0]};
-              end
-              `LB_OPERATION: begin
-                case (Addr[1:0])
-                  2'b00: DataOut = {{24{cache_data[7]}},  cache_data[7:0]};
-                  2'b01: DataOut = {{24{cache_data[15]}}, cache_data[15:8]};
-                  2'b10: DataOut = {{24{cache_data[23]}}, cache_data[23:16]};
-                  2'b11: DataOut = {{24{cache_data[31]}}, cache_data[31:24]};
-                  default: DataOut = cache_data;
-                endcase
-              end
-              `LBU_OPERATION: begin
-                case (Addr[1:0])
-                  2'b00: DataOut = {24'b0, cache_data[7:0]};
-                  2'b01: DataOut = {24'b0, cache_data[15:8]};
-                  2'b10: DataOut = {24'b0, cache_data[23:16]};
-                  2'b11: DataOut = {24'b0, cache_data[31:24]};
-                  default: DataOut = cache_data;
-                endcase
-              end
-              default: DataOut = cache_data;
-            endcase
-          end else begin
-            // Load miss: initiate a memory request
-            DStall = 1;
-            MemAddr = Addr;
-          end
-        end
-        else if (MemWrite) begin
-          if (hit) begin
-            // Store hit: write-through, output merged data and update memory signals
-            DStall = 0;
-            MemAddr = Addr;
-            MemWriteData = updated_data;
-            MemWb = 1;
-            DataOut = updated_data;
-          end else begin
-            // Store miss: initiate write-allocate request
-            DStall = 1;
-            MemAddr = Addr;
-          end
-        end
-        else begin
-          DStall = 0;
-        end
-      end
-      STATE_MISS: begin
-        // During waiting for memory data, hold Stall high and output address
-        DStall = 1;
-        MemAddr = Addr;
-      end
-      STATE_UPDATE: begin
-        // In update state, memory data has been returned.
-        DStall = 0;
-        if (MemWrite) begin
-          // For store miss update: update the cache using the merged data
-          DataOut = updated_data;
-          MemAddr = Addr;
-          MemWriteData = updated_data;
-          MemWb = 1;
-        end else begin
-          // For load miss update, update the cache with MemData and generate DataOut based on LS_op
-          case (LS_op)
-            `LW_OPERATION: temp_data = proc_MemData;
-            `LH_OPERATION: begin
-              if (Addr[1])
-                temp_data = {{16{proc_MemData[31]}}, proc_MemData[31:16]};
-              else
-                temp_data = {{16{proc_MemData[15]}}, proc_MemData[15:0]};
-            end
-            `LHU_OPERATION: begin
-              if (Addr[1])
-                temp_data = {16'b0, proc_MemData[31:16]};
-              else
-                temp_data = {16'b0, proc_MemData[15:0]};
-            end
-            `LB_OPERATION: begin
-              case (Addr[1:0])
-                2'b00: temp_data = {{24{proc_MemData[7]}}, proc_MemData[7:0]};
-                2'b01: temp_data = {{24{proc_MemData[15]}}, proc_MemData[15:8]};
-                2'b10: temp_data = {{24{proc_MemData[23]}}, proc_MemData[23:16]};
-                2'b11: temp_data = {{24{proc_MemData[31]}}, proc_MemData[31:24]};
-                default: temp_data = proc_MemData;
-              endcase
-            end
-            `LBU_OPERATION: begin
-              case (Addr[1:0])
-                2'b00: temp_data = {24'b0, proc_MemData[7:0]};
-                2'b01: temp_data = {24'b0, proc_MemData[15:8]};
-                2'b10: temp_data = {24'b0, proc_MemData[23:16]};
-                2'b11: temp_data = {24'b0, proc_MemData[31:24]};
-                default: temp_data = proc_MemData;
-              endcase
-            end
-            default: temp_data = proc_MemData;
-          endcase
-          DataOut = temp_data;
-          MemAddr = Addr;
-        end
-      end
-      default: begin
-        DStall = 0;
-        DataOut = 32'b0;
-      end
-    endcase
+    if (rst) begin
+         DataOut = 32'b0;
+         MemAddr = 32'b0;
+         MemWriteData = 32'b0;
+         MemWb = 1'b0;
+         DStall = 1'b0;
+    end else begin
+         case (state)
+           STATE_IDLE: begin
+             if (MemRead) begin
+               if (hit) begin
+                 DStall = 0;
+                 case (LS_op)
+                   `LW_OPERATION: DataOut = cache_data;
+                   `LH_OPERATION: begin
+                     if (Addr[1])
+                       DataOut = {{16{cache_data[31]}}, cache_data[31:16]};
+                     else
+                       DataOut = {{16{cache_data[15]}}, cache_data[15:0]};
+                   end
+                   `LHU_OPERATION: begin
+                     if (Addr[1])
+                       DataOut = {16'b0, cache_data[31:16]};
+                     else
+                       DataOut = {16'b0, cache_data[15:0]};
+                   end
+                   `LB_OPERATION: begin
+                     case (Addr[1:0])
+                       2'b00: DataOut = {{24{cache_data[7]}}, cache_data[7:0]};
+                       2'b01: DataOut = {{24{cache_data[15]}}, cache_data[15:8]};
+                       2'b10: DataOut = {{24{cache_data[23]}}, cache_data[23:16]};
+                       2'b11: DataOut = {{24{cache_data[31]}}, cache_data[31:24]};
+                       default: DataOut = cache_data;
+                     endcase
+                   end
+                   `LBU_OPERATION: begin
+                     case (Addr[1:0])
+                       2'b00: DataOut = {24'b0, cache_data[7:0]};
+                       2'b01: DataOut = {24'b0, cache_data[15:8]};
+                       2'b10: DataOut = {24'b0, cache_data[23:16]};
+                       2'b11: DataOut = {24'b0, cache_data[31:24]};
+                       default: DataOut = cache_data;
+                     endcase
+                   end
+                   default: DataOut = cache_data;
+                 endcase
+               end else begin
+                 DStall = 1;
+                 MemAddr = Addr;
+               end
+             end else if (MemWrite) begin
+               if (hit) begin
+                 DStall = 0;
+                 MemAddr = Addr;
+                 MemWriteData = updated_data;
+                 MemWb = 1;
+                 DataOut = updated_data;
+               end else begin
+                 DStall = 1;
+                 MemAddr = Addr;
+               end
+             end else begin
+               DStall = 0;
+             end
+           end
+           STATE_MISS: begin
+             DStall = 1;
+             MemAddr = Addr;
+           end
+           STATE_UPDATE: begin
+             DStall = 0;
+             if (MemWrite) begin
+               DataOut = updated_data;
+               MemAddr = Addr;
+               MemWriteData = updated_data;
+               MemWb = 1;
+             end else begin
+               case (LS_op)
+                 `LW_OPERATION: DataOut = proc_MemData;
+                 `LH_OPERATION: begin
+                   if (Addr[1])
+                     DataOut = {{16{proc_MemData[31]}}, proc_MemData[31:16]};
+                   else
+                     DataOut = {{16{proc_MemData[15]}}, proc_MemData[15:0]};
+                 end
+                 `LHU_OPERATION: begin
+                   if (Addr[1])
+                     DataOut = {16'b0, proc_MemData[31:16]};
+                   else
+                     DataOut = {16'b0, proc_MemData[15:0]};
+                 end
+                 `LB_OPERATION: begin
+                   case (Addr[1:0])
+                     2'b00: DataOut = {{24{proc_MemData[7]}}, proc_MemData[7:0]};
+                     2'b01: DataOut = {{24{proc_MemData[15]}}, proc_MemData[15:8]};
+                     2'b10: DataOut = {{24{proc_MemData[23]}}, proc_MemData[23:16]};
+                     2'b11: DataOut = {{24{proc_MemData[31]}}, proc_MemData[31:24]};
+                     default: DataOut = proc_MemData;
+                   endcase
+                 end
+                 `LBU_OPERATION: begin
+                   case (Addr[1:0])
+                     2'b00: DataOut = {24'b0, proc_MemData[7:0]};
+                     2'b01: DataOut = {24'b0, proc_MemData[15:8]};
+                     2'b10: DataOut = {24'b0, proc_MemData[23:16]};
+                     2'b11: DataOut = {24'b0, proc_MemData[31:24]};
+                     default: DataOut = proc_MemData;
+                   endcase
+                 end
+                 default: DataOut = proc_MemData;
+               endcase
+               MemAddr = Addr;
+             end
+           end
+           default: begin
+             DStall = 0;
+             DataOut = 32'b0;
+           end
+         endcase
+    end
   end
 
-  // State machine and cache update
-  always @(posedge clk) begin
+  // State machine update
+  always @(posedge clk or posedge rst) begin
     if (rst) begin
       state <= STATE_IDLE;
       for (i = 0; i < (1 << INDEX_BITS); i = i + 1) begin
@@ -280,7 +275,6 @@ module DCache(
           if ((MemRead || MemWrite) && !hit)
             state <= STATE_MISS;
           else begin
-            // On store hit, update cache synchronously
             if (MemWrite && hit)
               Cache[index] <= {1'b1, addr_tag, updated_data};
             state <= STATE_IDLE;
@@ -288,7 +282,6 @@ module DCache(
         end
         STATE_MISS: state <= STATE_UPDATE;
         STATE_UPDATE: begin
-          // Update cache: for load miss, use MemData; for store miss, use updated_data
           if (MemRead)
             Cache[index] <= {1'b1, addr_tag, MemData};
           else if (MemWrite)
