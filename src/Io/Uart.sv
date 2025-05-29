@@ -1,35 +1,35 @@
 `timescale 1ns / 1ps
 `include "Constants.vh"
 
-module UART (
+module Uart (
     input                    clk, reset, rx,
-    output logic [`DATA_WIDTH] DatoOut,
+    output logic [`DATA_WIDTH] DataOut,
     output logic [`DATA_WIDTH] Address,
     output logic             Done
 );
 
-    logic       RxDone = 0;
-    logic [7:0] RxData = 0;
+    logic       RxDone;
+    logic [7:0] RxData;
 
     Queue queue (
         .clk(clk),
         .reset(reset),
-        .data_in(RxData),
-        .ready_in(RxDone),
-        .DatoOut(DataOut),
+        .DataIn(RxData),
+        .Ready(RxDone),
+        .DataOut(DataOut),
         .Address(Address)
     );
 
     // timeout detection
-    logic [15:0] IdleCnt = 0;
-    logic [9:0]  IdleCnt0 = 0;
-    logic        Received = 0;
+    logic [15:0] IdleCnt;
+    logic [9:0]  IdleCnt0;
+    logic        Received;
 
     // filter unexpected noise
-    logic RxdT0 = 1, RxdT1 = 1, RxdT2 = 1;
+    logic RxdT0, RxdT1, RxdT2;
 
     // detect start bit
-    logic  EnState = 0;
+    logic  EnState;
     logic nedge;
     assign nedge = !RxdT1 & RxdT2;
 
@@ -74,24 +74,24 @@ module UART (
     end
     
     // count baud
-    logic [9:0] baud_cnt;
+    logic [9:0] BandCnt;
     always_ff @(posedge clk) begin
-        if (reset) baud_cnt <= 10'b0;
+        if (reset) BandCnt <= 10'b0;
         else if (EnState) begin
-            if(baud_cnt == `BPS_CNT - 1) baud_cnt <= 10'b0;
-            else baud_cnt <= baud_cnt + 1'b1;
-        end else baud_cnt <= 10'b0;
+            if(BandCnt == `BPS_CNT - 1) BandCnt <= 10'b0;
+            else BandCnt <= BandCnt + 1'b1;
+        end else BandCnt <= 10'b0;
     end
     
     // count bits
-    logic [3:0] bit_cnt;
+    logic [3:0] BitCnt;
     always_ff @(posedge clk) begin
-        if (reset) bit_cnt <= 4'd0;
+        if (reset) BitCnt <= 4'd0;
         else if (EnState) begin
-            if(bit_cnt == 4'd0) bit_cnt <= bit_cnt + 1'b1;
-            else if(baud_cnt == `BPS_CNT - 1) bit_cnt <= bit_cnt + 1'b1;
-            else bit_cnt <= bit_cnt;
-        end else bit_cnt <= 4'b0;
+            if(BitCnt == 4'd0) BitCnt <= BitCnt + 1'b1;
+            else if(BandCnt == `BPS_CNT - 1) BitCnt <= BitCnt + 1'b1;
+            else BitCnt <= BitCnt;
+        end else BitCnt <= 4'b0;
     end
 
     // receive data
@@ -101,7 +101,7 @@ module UART (
             Received <= 1'b0;
         end else if (EnState) begin
             Received <= 1'b1;
-            case (bit_cnt)
+            case (BitCnt)
                 4'd1: RxData[0] <= RxdT2;
                 4'd2: RxData[1] <= RxdT2;
                 4'd3: RxData[2] <= RxdT2;
@@ -123,8 +123,8 @@ module UART (
         if (reset) begin
             RxDone <= 1'b0;
         end else if (EnState) begin
-            if(bit_cnt == 0) RxDone <= 1'b0;
-            else if(bit_cnt == 9 && baud_cnt == `BPS_CNT - 1) RxDone <= 1'b1;
+            if(BitCnt == 0) RxDone <= 1'b0;
+            else if(BitCnt == 9 && BandCnt == `BPS_CNT - 1) RxDone <= 1'b1;
             else if(RxDone == 1'b1) RxDone <= 1'b0;
             else RxDone <= RxDone;
         end else if(RxDone == 1'b1) RxDone <= 1'b0;

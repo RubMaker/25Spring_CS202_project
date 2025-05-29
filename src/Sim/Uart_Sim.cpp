@@ -4,13 +4,13 @@
 #include "verilated_vcd_c.h"
 #include <vector>
 #include <fstream>
-#include "VUART.h"
+#include "VUart.h"
 
 using std::vector;
 
 // verilator
 const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-VUART *top = new VUART(contextp.get());
+VUart *top = new VUart(contextp.get());
 VerilatedVcdC* tfp = new VerilatedVcdC;
 
 vector<char> read_binary(const char *name) {
@@ -59,9 +59,9 @@ int main(int argc, char** argv) {
     top->trace(tfp, 1);
     tfp->open("uart_sim.vcd");
 
-    vector<char> messages = read_binary("../assembly/test/test1.bin");
+    vector<char> messages = read_binary("../assembly/test_sim/test7.bin");
     top->clk = 1;
-    top->rst = 0;
+    top->reset = 0;
     top->eval();
     contextp->timeInc(1);
     tfp->dump(contextp->time());

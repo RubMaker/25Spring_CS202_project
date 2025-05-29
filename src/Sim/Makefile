@@ -2,8 +2,8 @@
 LDFLAGS := -L/usr/local/lib -lunicorn -lSDL2 -Wl,-rpath=/usr/local/lib
 export LDFLAGS
 
-SOURCE_DIR := ../
-TARGET := CPU
+SOURCE_DIR := ../Io
+TARGET := Uart
 # 新增 --LDFLAGS 参数传递
 VERILATOR_FLAGS := --cc --fno-inline --hierarchical --vpi --build -j 0 -Wall -Wno-ALWCOMBORDER -Wno-UNUSEDSIGNAL --unroll-count 2048 --trace --LDFLAGS "$(LDFLAGS)"
 
