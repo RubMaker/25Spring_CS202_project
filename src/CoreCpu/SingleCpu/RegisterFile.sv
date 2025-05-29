@@ -42,7 +42,7 @@ module RegisterFile(
         end
     end
 
-    always_ff @(posedge clk) begin 
+    always_ff @(negedge clk) begin 
         if (reset) begin
             Registers[0] <= 32'b0; // Register 0 is hardwired to 0
             Registers[1] <= 32'b0; // Initialize other Registers to 0
@@ -56,7 +56,7 @@ module RegisterFile(
         end
     end
     // Read operations are combinational
-    assign ReadData1 = (ReadRegAddr1 == 5'b0) ? 32'b0 : Registers[ReadRegAddr1];
-    assign ReadData2 = (ReadRegAddr2 == 5'b0) ? 32'b0 : Registers[ReadRegAddr2];
+    assign ReadData1 = (ReadRegAddr1 == 5'b0 || reset) ? 32'b0 : Registers[ReadRegAddr1];
+    assign ReadData2 = (ReadRegAddr2 == 5'b0 || reset) ? 32'b0 : Registers[ReadRegAddr2];
 endmodule
 

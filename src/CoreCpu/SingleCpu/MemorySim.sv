@@ -16,11 +16,12 @@ module MemorySim (
     logic [`DATA_WIDTH] ShowData;
     assign ShowData = mem[14'h0001];
     always_ff @(posedge clka) begin : inst_mem
-        dataa <= mem[addra];
+        dataa <= dataa_temp;
+        dataa_temp <= mem[addra];
     end
 
     always_ff @(posedge clkb) begin : data_mem
-    datab <= mem[addrb];
+    datab <= datab_temp;
         unique if (~web) begin
             datab_temp <= mem[addrb];
         end
@@ -31,3 +32,6 @@ module MemorySim (
     end
 
 endmodule
+
+
+
