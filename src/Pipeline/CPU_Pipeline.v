@@ -99,6 +99,7 @@ module CPU_Pipeline(
         .clk(clk),
         .rst(rst),
         .PC_Write(PC_Write),
+        .flush(EX_BranchTaken),
         .icache_stall(ICacheStall),
         .dcache_stall(DCacheStall),
         .new_pc(new_pc),
