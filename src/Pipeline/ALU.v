@@ -21,6 +21,8 @@ module ALU (
      * @brief Combinatorial ALU operation block.
      */
     always @(*) begin
+        Mult = 64'd0; // Reset multiplier
+        ALU_result = 32'd0; // Reset ALU result
         case (ALUOp)
             `ALU_ADD: ALU_result = ALU_in1 + ALU_in2; // ADD
             `ALU_SUB: ALU_result = ALU_in1 - ALU_in2; // SUB
@@ -57,7 +59,10 @@ module ALU (
                          else
                              ALU_result = $signed(ALU_in1) % $signed(ALU_in2);
                       end
-            default: ALU_result = 32'd0;
+            default: begin 
+                ALU_result = 32'd0;
+                Mult = 64'd0; // Default case, reset result and multiplier
+            end
         endcase
     end
 
