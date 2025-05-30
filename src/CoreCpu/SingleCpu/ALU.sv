@@ -54,7 +54,7 @@ module ALU(
             `ALU_SLT:  Result = ($signed(InputA) < $signed(InputB)) ? 1 : {`DATA_LENGTH{1'b0}}; // Set less than (signed)
             `ALU_SLTU: Result = (InputA < InputB) ? 1 : {`DATA_LENGTH{1'b0}}; // Set less than unsigned
             // `ALU_LUI:  Result = InputB;      // Load upper immediate
-            // `ALU_NOR:  Result = ~(a | b);
+            // `ALU_NOR:  Result = ~(InputA | InputB);
             `ALU_MUL: begin
                 Mul = $signed(InputA) * $signed(InputB);
                 Result = Mul[31:0];

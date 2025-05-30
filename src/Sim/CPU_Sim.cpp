@@ -93,7 +93,7 @@ void run_one_cycle() {
 }
 
 vector<uint32_t> load_program() {
-    vector<char> data = read_binary("/home/wgx/computre_org/project/25Spring_CS202_project/src/assembly/test_sim/test2.bin"); // modify the path to the binary file
+    vector<char> data = read_binary("/home/wgx/computre_org/project/25Spring_CS202_project/src/Assembly/test_sim/test7.bin"); // modify the path to the binary file
     vector<unsigned int> inst;
     uint32_t concat_data, size = data.size() / 4;
 
