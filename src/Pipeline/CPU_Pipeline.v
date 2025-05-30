@@ -2,10 +2,18 @@
 `include "Constants.vh"
 
 module CPU_Pipeline(
-    input  wire clk,          // Clock signal
-    input  wire rst,          // Reset signal (active high)
-    output wire [31:0] pc_out, // Current program counter
-    output wire [31:0] inst_out // Current instruction being executed
+    input  wire clk,mem_clk,          // Clock signal
+    input  wire rst,          // Reset signal (active high) 
+    input  wire [`SWCH_WIDTH] Switch1, Switch2,
+    input  wire Button1, Button2, Button3, Button4, Button5,
+    input  wire [`VGA_ADDRESS] VgaAddress,
+
+    output wire [31:0] pc_out,   // Current program counter
+    output wire [31:0] inst_out, // Current instruction being executed
+    output wire [`LED_WIDTH] Led1Out, Led2Out,
+    output wire [`DATA_WIDTH] Seg1Out, 
+    output wire [`INFO_WIDTH] CharOut,   // VGA character output (MMIO)
+    output wire [`INFO_WIDTH] ColorOut  // VGA color output (MMIO)
 );
 
     // Pipeline control signals
@@ -18,6 +26,8 @@ module CPU_Pipeline(
     // PC signals
     wire [31:0] new_pc;
     wire [31:0] current_pc;
+    // Flush signal: When branch taken, force immediate PC update.
+    wire flush;
     
     // IF stage signals
     wire [31:0] IF_PcOut;
@@ -67,9 +77,9 @@ module CPU_Pipeline(
     
     // EX/MEM pipeline signals
     wire [31:0] EX_MEM_ALU_result;
-    wire [4:0] EX_MEM_RdOut;
-    wire       EX_MEM_RegWriteOut;
-    wire       EX_MEM_MemtoRegOut;
+    wire [4:0]  EX_MEM_RdOut;
+    wire        EX_MEM_RegWriteOut;
+    wire        EX_MEM_MemtoRegOut;
     
     // MEM stage signals
     wire [31:0] MEM_Result;
@@ -86,27 +96,33 @@ module CPU_Pipeline(
     wire [31:0] Rs1Data;
     wire [31:0] Rs2Data;
     
-    // External memory interface (simplified for this example)
-    wire [31:0] ExtMemInst = 32'd0; // Normally from memory
-    wire [31:0] MemData    = 32'd0; // Normally from memory
-
-    // Connect outputs
+    // External memory interface signals
+    // These signals come from the Memory module.
+    wire [31:0] ExtMemInst;
+    wire [31:0] MemData;
+    
+    // Connect top-level outputs
     assign pc_out = current_pc;
     assign inst_out = IF_ID_InstOut;
     
-    // Program Counter
+    // Next PC selection:
+    // When EX stage indicates branch taken, new_pc becomes EX_OldPc;
+    // otherwise, new_pc = current_pc + 4.
+    assign new_pc = EX_BranchTaken ? EX_OldPc : (current_pc + 4);
+    
+    // Program Counter:
     PC pc_module(
         .clk(clk),
         .rst(rst),
         .PC_Write(PC_Write),
-        .flush(EX_BranchTaken),
         .icache_stall(ICacheStall),
         .dcache_stall(DCacheStall),
+        .flush(EX_BranchTaken),  // Flush = branch taken
         .new_pc(new_pc),
         .pc_out(current_pc)
     );
     
-    // Instruction Fetch stage
+    // Instruction Fetch stage:
     IF if_stage(
         .clk(clk),
         .rst(rst),
@@ -120,7 +136,7 @@ module CPU_Pipeline(
         .InstOut(IF_InstOut)
     );
     
-    // IF/ID Pipeline Register
+    // IF/ID Pipeline Register:
     IF_ID if_id_reg(
         .clk(clk),
         .rst(rst),
@@ -132,7 +148,7 @@ module CPU_Pipeline(
         .pc_out(IF_ID_PcOut)
     );
     
-    // Instruction Decode stage
+    // Instruction Decode stage:
     ID id_stage(
         .clk(clk),
         .rst(rst),
@@ -158,7 +174,7 @@ module CPU_Pipeline(
         .Rs2Addr(ID_Rs2Addr)
     );
     
-    // ID/EX Pipeline Register
+    // ID/EX Pipeline Register:
     ID_EX id_ex_reg(
         .clk(clk),
         .rst(rst),
@@ -198,7 +214,7 @@ module CPU_Pipeline(
         .LS_opOut(ID_EX_LS_opOut)
     );
     
-    // Execution stage
+    // Execution stage:
     EX ex_stage(
         .Rs1Data(ID_EX_Rs1Out),
         .Rs2Data(ID_EX_Rs2Out),
@@ -221,12 +237,11 @@ module CPU_Pipeline(
         .OldPc(EX_OldPc)
     );
     
-    
     assign EX_MEM_RdOut       = ID_EX_RdOut;
     assign EX_MEM_RegWriteOut = ID_EX_RegWriteOut;
     assign EX_MEM_MemtoRegOut = ID_EX_MemtoRegOut;
     
-    // EX/MEM Pipeline Register
+    // EX/MEM Pipeline Register:
     MEM ex_mem_reg(
         .clk(clk),
         .rst(rst),
@@ -245,7 +260,7 @@ module CPU_Pipeline(
     
     assign MEM_Result = EX_MEM_ALU_result;
     
-    // MEM/WB Pipeline Register
+    // MEM/WB Pipeline Register:
     MEM_WB mem_wb_reg(
         .clk(clk),
         .rst(rst),
@@ -258,7 +273,7 @@ module CPU_Pipeline(
         .WbRd(MEM_WB_Rd)
     );
     
-    // Register File
+    // Register File:
     Registers reg_file(
         .clk(clk),
         .rst(rst),
@@ -271,8 +286,36 @@ module CPU_Pipeline(
         .rd_data(MEM_WB_Result)
     );
     
-    // Next PC selection:
-    // 若EX阶段分支命中�? new_pc = EX_OldPc，否�? new_pc = current_pc + 4
-    assign new_pc = EX_BranchTaken ? EX_OldPc : (current_pc + 4);
-
+    // -----------------------------------------------------------------
+    // Instantiate the Memory module:
+    //
+    // Port A is used for instruction memory access (with the current PC address).
+    // Port B is used for data memory access (with the MEM stage address and write data).
+    // All MMIO signals are connected to the corresponding input ports from the top module.
+    // -----------------------------------------------------------------
+    Memory memory_inst(
+        .reset(rst),
+        .clkA(mem_clk),
+        .clkB(mem_clk),
+        .AddressA(current_pc),         // Instruction fetch address.
+        .AddressB(MEM_MemAddr),          // Data memory address.
+        .WriteData(MEM_MemWriteData),    // Write data for data memory.
+        .EnableWriteB(MEM_MemWb),        // Write enable for data memory.
+        .Switch1(Switch1),
+        .Switch2(Switch2),
+        .Button1(Button1),
+        .Button2(Button2),
+        .Button3(Button3),
+        .Button4(Button4),
+        .Button5(Button5),
+        .VgaAddress(VgaAddress),
+        .Seg1Out(Seg1Out),
+        .Led1Out(Led1Out),
+        .Led2Out(Led2Out),
+        .CharOut(CharOut),
+        .ColorOut(ColorOut),
+        .ReadDataA(ExtMemInst),         // Instruction memory read data.
+        .ReadDataB(MemData)             // Data memory read data.
+    );
+    
 endmodule
