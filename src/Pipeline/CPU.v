@@ -97,7 +97,7 @@ module CPU(
     // Control signals are assumed to be passed (for example, RegWrite, etc.)
     // In this example, we assume the EX_MEM module packs the control signals inside itself.
     wire        EX_MEM_WB_ctrl; // WB control (e.g. RegWrite signal)
-    
+    wire [4:0] MEM_ctrl_out;    
     //////////////////////////////////////////////////////////////////////////////
     // MEM stage signals
     //////////////////////////////////////////////////////////////////////////////
@@ -296,7 +296,7 @@ module CPU(
         .ALUres_out(EX_MEM_ALU_result),     // Forward ALU result to MEM stage
         .data2_out(EX_MEM_data2),           // Forward store data (if needed)
         .rd_out(EX_MEM_RdOut),              // Forward destination register to MEM stage
-        .MEM_ctrl_out(),                   // (Unused in this top-level)
+        .MEM_ctrl_out(MEM_ctrl_out),                   // (Unused in this top-level)
         .WB_ctrl_out(EX_MEM_WB_ctrl)         // WB control signal for forwarding (RegWrite)
     );
     
@@ -383,3 +383,4 @@ module CPU(
     );
 
 endmodule
+

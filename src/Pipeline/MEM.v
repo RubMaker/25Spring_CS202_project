@@ -33,7 +33,7 @@ module MEM(
       .MemRead(MemRead),
       .MemWrite(MemWrite),
       .LS_op(LS_op),
-      .Data_Out(CacheDataOut),
+      .DataOut(CacheDataOut),
       .DStall(DStall),
       .MemData(MemData),
       .MemAddr(MemAddr),
