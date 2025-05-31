@@ -10,7 +10,7 @@ module DCache(
     input             MemRead,
     input             MemWrite,
     input  [2:0]      LS_op,
-    output [31:0]     Data_Out,
+    output reg [31:0] DataOut,
     output reg        DStall,
     // Memory interface
     input  [31:0]     MemData,
@@ -32,7 +32,6 @@ module DCache(
   localparam STATE_UPDATE = 2'b10;
   
   reg [1:0] state;
-  reg [31:0] DataOut; // Output data to CPU
 
   // Cache array: total number of cache lines is 2^(INDEX_BITS)
   reg [BLOCK_WIDTH-1:0] Cache [0:(1<<INDEX_BITS)-1];
@@ -263,7 +262,6 @@ module DCache(
     end
   end
 
-  assign Data_Out = DataOut;
   // State machine update
   always @(posedge clk or posedge rst) begin
     if (rst) begin

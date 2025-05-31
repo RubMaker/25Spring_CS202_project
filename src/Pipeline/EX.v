@@ -43,6 +43,7 @@ module EX (
 
     // Forwarding unit wires
     wire [31:0] forwarded_A, forwarded_B;
+    reg [31:0] AluResult;
     
     // Instantiate the forwarding unit.
     Forwarding forward_inst (
@@ -69,7 +70,7 @@ module EX (
         .ALU_in1(forwarded_A),
         .ALU_in2(ALUIn2),
         .ALUOp(ALUOp),
-        .ALU_result(ALU_result)
+        .ALU_result(AluResult)
     );
     
     // Instantiate BRU (Branch Resolution Unit) for branch decision and PC update.
@@ -88,5 +89,6 @@ module EX (
     // Connect BRU outputs.
     assign BranchTaken = BruTaken;
     assign OldPc = BruNewPc;
+    assign ALU_result = AluResult;
 
 endmodule

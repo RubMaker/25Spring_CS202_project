@@ -30,29 +30,36 @@ module MEM_WB(
     input [4:0]  MemRd,        // Destination register number from MEM stage
 
     // Outputs to Write Back stage
-    output reg [31:0] WbData,      // Write-back data to be written to the register file
-    output reg        WbRegWrite,  // Write-back enable signal
-    output reg [4:0]  WbRd         // Destination register number for write-back
+    output [31:0] WbData,      // Write-back data to be written to the register file
+    output        WbRegWrite,  // Write-back enable signal
+    output [4:0]  WbRd         // Destination register number for write-back
 );
+
+    reg [4:0]  Rd = 4'b0;
+    reg [31:0] Data = 32'b0;
+    reg        RegWrite = 1'b0; 
 
     // Pipeline register update: update on positive clock edge
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             // Reset pipeline registers
-            WbData     <= 32'd0;
-            WbRegWrite <= 1'b0;
-            WbRd       <= 5'd0;
+            Data     <= 32'd0;
+            RegWrite <= 1'b0;
+            Rd       <= 5'd0;
         end else if (stall) begin
             // Stall: hold the current values
-            WbData     <= WbData;
-            WbRegWrite <= WbRegWrite;
-            WbRd       <= WbRd;
+            Data     <= Data;
+            RegWrite <= RegWrite;
+            Rd       <= Rd;
         end else begin
             // Normal operation: capture MEM stage inputs
-            WbData     <= MemResult;
-            WbRegWrite <= MemRegWrite;
-            WbRd       <= MemRd;
+            Data     <= MemResult;
+            RegWrite <= MemRegWrite;
+            Rd       <= MemRd;
         end
     end
 
+    assign WbData = Data;
+    assign WbRegWrite = RegWrite;
+    assign WbRd = Rd;
 endmodule

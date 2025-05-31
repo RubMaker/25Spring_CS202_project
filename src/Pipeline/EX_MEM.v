@@ -30,41 +30,51 @@ module EX_MEM (
     input  [31:0]     data2_in,
     input  [4:0]      rd_in,
     input  [4:0]      MEM_ctrl_in,
-    input  [0:0]      WB_ctrl_in,
+    input             WB_ctrl_in,
     // Outputs to the MEM stage
-    output reg [31:0] ALUres_out,
-    output reg [31:0] data2_out,
-    output reg [4:0]  rd_out,
-    output reg [4:0]  MEM_ctrl_out,
-    output reg [0:0]  WB_ctrl_out
+    output  [31:0] ALUres_out,
+    output  [31:0] data2_out,
+    output  [4:0]   rd_out,
+    output  [4:0]   MEM_ctrl_out,
+    output          WB_ctrl_out
 );
 
+  reg [31:0] ALUres = 32'b0;
+  reg [31:0] data2 = 32'b0;
+  reg [4:0] rd = 5'b0;
+  reg [4:0] MEM_ctrl = 5'b0;
+  reg          WB_ctrl = 32'b0;
   // On the rising edge of the clock or asynchronous reset, update the pipeline registers.
   always @(posedge clk or posedge rst) begin
     if (rst) begin
       // Reset all outputs to initial state
-      ALUres_out   <= 32'd0;
-      data2_out    <= 32'd0;
-      rd_out       <= 5'd0;
-      MEM_ctrl_out <= 5'd0;
-      WB_ctrl_out  <= 1'd0;
+      ALUres   <= 32'd0;
+      data2    <= 32'd0;
+      rd       <= 5'd0;
+      MEM_ctrl <= 5'd0;
+      WB_ctrl  <= 1'd0;
     end
     else if (stall) begin
       // Stall detected: keep current values to freeze the pipeline stage
-      ALUres_out   <= ALUres_out;
-      data2_out    <= data2_out;
-      rd_out       <= rd_out;
-      MEM_ctrl_out <= MEM_ctrl_out;
-      WB_ctrl_out  <= WB_ctrl_out;
+      ALUres   <= ALUres;
+      data2      <= data2;
+      rd       <= rd;
+      MEM_ctrl <= MEM_ctrl;
+      WB_ctrl  <= WB_ctrl;
     end
     else begin
       // No hazard: update the pipeline registers with new input values
-      ALUres_out   <= ALUres_in;
-      data2_out    <= data2_in;
-      rd_out       <= rd_in;
-      MEM_ctrl_out <= MEM_ctrl_in;
-      WB_ctrl_out  <= WB_ctrl_in;
+      ALUres   <= ALUres;
+      data2    <= data2_in;
+      rd       <= rd_in;
+      MEM_ctrl <= MEM_ctrl_in;
+      WB_ctrl  <= WB_ctrl_in;
     end
   end
-
+  
+  assign ALUres_out = ALUres;
+  assign data2_out = data2;
+  assign rd_out = rd;
+  assign MEM_ctrl_out = MEM_ctrl;
+  assign WB_ctrl_out = WB_ctrl;
 endmodule

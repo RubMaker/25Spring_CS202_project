@@ -23,29 +23,34 @@ module IF_ID (
     input         clk,           // Clock signal
     input         rst,           // Asynchronous reset (active high)
     input         IF_ID_Write,   // Pipeline register write enable (active high)
-    input         stall,         // Stall signal to freeze pipeline register updates
+    input         DStall,         
+    input         IStall, 
     input  [31:0] inst_in,       // Instruction input from IF stage
     input  [31:0] pc_in,         // Program counter input from IF stage
-    output reg [31:0] inst_out,  // Instruction output to ID stage
-    output reg [31:0] pc_out     // PC output to ID stage
+    output [31:0] inst_out,  // Instruction output to ID stage
+    output [31:0] pc_out     // PC output to ID stage
 );
 
+  reg [31:0] inst = 32'b0; 
+  reg [31:0] pc = 32'b0;
   // Update pipeline register on the rising edge of the clock or reset
   always @(posedge clk or posedge rst) begin
-    if (rst) begin
+    if (rst || (IStall && !DStall && !IF_ID_Write)) begin
       // On reset, clear the pipeline register registers to zero
-      inst_out <= 32'd0;
-      pc_out   <= 32'd0;
-    end else if (!IF_ID_Write || stall) begin
+      inst <= 32'd0;
+      pc   <= 32'd0;
+    end else if (!IF_ID_Write || DStall) begin
       // If write enable is low or a stall condition is asserted,
       // maintain the current values in the pipeline register
-      inst_out <= inst_out;
-      pc_out   <= pc_out;
+      inst <= inst;
+      pc   <= pc;
     end else begin
       // Otherwise update the pipeline register with new IF stage outputs
-      inst_out <= inst_in;
-      pc_out   <= pc_in;
+      inst <= inst_in;
+      pc   <= pc_in;
     end
   end
 
+  assign inst_out = inst;
+  assign pc_out = pc;
 endmodule
