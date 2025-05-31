@@ -291,7 +291,7 @@ module CPU(
         .ALUres_in(EX_ALU_result),         // ALU result from EX stage
         .data2_in(ID_EX_Rs2Out),            // Data for store operation from EX stage
         .rd_in(ID_EX_RdOut),                // Destination register from EX stage
-        .MEM_ctrl_in({ID_EX_MemWriteOut, ID_EX_MemReadOut, ID_EX_MemtoRegOut, 1'b0}),
+        .MEM_ctrl_in({ID_EX_MemWriteOut, ID_EX_MemReadOut, ID_EX_MemtoRegOut}),
         .WB_ctrl_in({ID_EX_RegWriteOut}),
         .ALUres_out(EX_MEM_ALU_result),     // Forward ALU result to MEM stage
         .data2_out(EX_MEM_data2),           // Forward store data (if needed)
@@ -309,8 +309,8 @@ module CPU(
         .rst(rst),
         .AluResult(EX_MEM_ALU_result),
         .WriteData(ID_EX_Rs2Out),
-        .MemRead(ID_EX_MemReadOut),
-        .MemWrite(ID_EX_MemWriteOut),
+        .MemRead(EX_MEM_WB_ctrl[1]),
+        .MemWrite(EX_MEM_WB_ctrl[2]),
         .LS_op(ID_EX_LS_opOut),
         .Result(MEM_Result),              // Result from MEM stage (ALU result or loaded data)
         .DStall(DCacheStall),
@@ -329,7 +329,7 @@ module CPU(
         .rst(rst),
         .stall(DCacheStall),            
         .MemResult(MEM_Result),
-        .MemRegWrite(EX_MEM_WB_ctrl),    // Use WB control signal propagated from EX/MEM register
+        .MemRegWrite(EX_MEM_WB_ctrl[0]),    // Use WB control signal propagated from EX/MEM register
         .MemRd(EX_MEM_RdOut),
         .WbData(MEM_WB_Result),
         .WbRegWrite(MEM_WB_RegWrite),

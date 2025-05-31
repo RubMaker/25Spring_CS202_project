@@ -35,9 +35,9 @@ module MEM_WB(
     output [4:0]  WbRd         // Destination register number for write-back
 );
 
-    reg [4:0]  Rd = 4'b0;
-    reg [31:0] Data = 32'b0;
-    reg        RegWrite = 1'b0; 
+    reg [4:0]  Rd;
+    reg [31:0] Data;
+    reg        RegWrite; 
 
     // Pipeline register update: update on positive clock edge
     always @(posedge clk or posedge rst) begin

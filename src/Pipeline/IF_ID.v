@@ -31,8 +31,8 @@ module IF_ID (
     output [31:0] pc_out     // PC output to ID stage
 );
 
-  reg [31:0] inst = 32'b0; 
-  reg [31:0] pc = 32'b0;
+  reg [31:0] inst; 
+  reg [31:0] pc;
   // Update pipeline register on the rising edge of the clock or reset
   always @(posedge clk or posedge rst) begin
     if (rst || (IStall && !DStall && !IF_ID_Write)) begin

@@ -39,22 +39,22 @@ module ID_EX(
     output [2:0]  LS_opOut
 );
 
-  reg [31:0] Pc = 32'b0;
-  reg [31:0] Rs1 = 32'b0;
-  reg [31:0] Rs2 = 32'b0;
-  reg [4:0]  Rd = 5'b0;
-  reg [31:0] Imm = 32'b0;
-  reg [4:0]  rs1 = 5'b0;
-  reg [4:0]  rs2 = 5'b0;
-  reg        RegWrite = 1'b0;
-  reg        ALUSrc = 1'b0;
-  reg        MemtoReg = 1'b0;
-  reg        MemRead = 1'b0;
-  reg        MemWrite = 1'b0;
-  reg        Branch = 1'b0;
-  reg [3:0]  ALU_op = 4'b0;
-  reg [2:0]  BRU_op = 3'b0;
-  reg [2:0]  LS_op = 3'b0;
+  reg [31:0] Pc;
+  reg [31:0] Rs1;
+  reg [31:0] Rs2;
+  reg [4:0]  Rd;
+  reg [31:0] Imm;
+  reg [4:0]  rs1;
+  reg [4:0]  rs2;
+  reg        RegWrite;
+  reg        ALUSrc;
+  reg        MemtoReg;
+  reg        MemRead;
+  reg        MemWrite;
+  reg        Branch;
+  reg [3:0]  ALU_op;
+  reg [2:0]  BRU_op;
+  reg [2:0]  LS_op;
 
   always @(posedge clk or posedge rst) begin
     if (rst || flush) begin

@@ -29,21 +29,21 @@ module EX_MEM (
     input  [31:0]     ALUres_in,
     input  [31:0]     data2_in,
     input  [4:0]      rd_in,
-    input  [4:0]      MEM_ctrl_in,
+    input  [2:0]      MEM_ctrl_in,
     input             WB_ctrl_in,
     // Outputs to the MEM stage
     output  [31:0] ALUres_out,
     output  [31:0] data2_out,
     output  [4:0]   rd_out,
-    output  [4:0]   MEM_ctrl_out,
+    output  [2:0]   MEM_ctrl_out,
     output          WB_ctrl_out
 );
 
-  reg [31:0] ALUres = 32'b0;
-  reg [31:0] data2 = 32'b0;
-  reg [4:0] rd = 5'b0;
-  reg [4:0] MEM_ctrl = 5'b0;
-  reg          WB_ctrl = 32'b0;
+  reg [31:0] ALUres;
+  reg [31:0] data2;
+  reg [4:0] rd;
+  reg [4:0] MEM_ctrl;
+  reg       WB_ctrl;
   // On the rising edge of the clock or asynchronous reset, update the pipeline registers.
   always @(posedge clk or posedge rst) begin
     if (rst) begin
@@ -51,7 +51,7 @@ module EX_MEM (
       ALUres   <= 32'd0;
       data2    <= 32'd0;
       rd       <= 5'd0;
-      MEM_ctrl <= 5'd0;
+      MEM_ctrl <= 3'd0;
       WB_ctrl  <= 1'd0;
     end
     else if (stall) begin
