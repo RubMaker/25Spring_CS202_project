@@ -14,7 +14,6 @@ module IF (
     input         IF_ID_Write,  // Enable writing to the IF/ID pipeline register
     input         Branch,       // External branch signal from the EX stage
     // ICache memory interface:
-    output [31:0] MemPC,        // Address passed to the ICache module
     output        IStall,  // Stall signal from the ICache module
     // External memory instruction input (provided by the testbench)
     input  [31:0] ExtMemInst,
@@ -93,8 +92,7 @@ module IF (
       .Addr(pc_in),          // Use external pc_in as the address.
       .ExtMemInst(ExtMemInst),
       .Inst(CacheInst),
-      .IStall(IStall),
-      .MemPc(MemPC)
+      .IStall(IStall)
   );
 
 endmodule

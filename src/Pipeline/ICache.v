@@ -10,12 +10,8 @@ module ICache (
   input  wire [31:0]  Addr,        // Input address (byte address)
   input  wire [31:0]  ExtMemInst,  // Instruction from external memory (simulated by testbench)
   output wire [31:0]  Inst,        // Output instruction (32-bit word)
-  output wire         IStall, // Stall signal for cache miss
-  output wire [31:0]  MemPc        // Address passed to the memory interface
+  output wire         IStall // Stall signal for cache miss
 );
-
-  // Pass the input address directly to the memory interface
-  assign MemPc = Addr;
   
   // State definitions
   parameter IDLE   = 1'b0;

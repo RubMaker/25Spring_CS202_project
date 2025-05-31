@@ -46,18 +46,28 @@ module Memory(
     logic EnWB;
     
 
-    Mem mem_inst(
-        .clka(~clkA),
-        .clkb(~clkB),
+    // Mem mem_inst(
+    //     .clka(~clkA),
+    //     .clkb(~clkB),
+    //     .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
+    //     .addrb(AddressB[ADDR_HIGH:ADDR_LOW]),
+    //     .dina(0),
+    //     .dinb(IsMMIO ? 0 : WriteData),
+    //     .douta(ReDataA),
+    //     .doutb(ReDataB),
+    //     .ena(1),
+    //     .enb(1),
+    //     .wea(0),
+    //     .web(EnWB)
+    // );
+    MemorySim mem_inst(
+        .clka(clkA),
+        .clkb(clkB),
         .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
         .addrb(AddressB[ADDR_HIGH:ADDR_LOW]),
-        .dina(0),
-        .dinb(IsMMIO ? 0 : WriteData),
-        .douta(ReDataA),
-        .doutb(ReDataB),
-        .ena(1),
-        .enb(1),
-        .wea(0),
+        .write_datab(IsMMIO ? 0 : WriteData),
+        .dataa(ReDataA),
+        .datab(ReDataB),
         .web(EnWB)
     );
 
@@ -96,3 +106,4 @@ module Memory(
 
     
 endmodule
+

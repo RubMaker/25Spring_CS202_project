@@ -41,7 +41,8 @@ module ID (
 
     // output the source register addresses.
     output wire [4:0]   Rs1Addr,     // Address specified in the Rs1 field (Inst[19:15])
-    output wire [4:0]   Rs2Addr      // Address specified in the Rs2 field (Inst[24:20])
+    output wire [4:0]   Rs2Addr,      // Address specified in the Rs2 field (Inst[24:20])
+    output wire         Stall        // Stall signal for hazard detection 
 );
 
     // Instantiate the Controller submodule to perform instruction decoding.
@@ -71,7 +72,7 @@ module ID (
         .ID_EX_Rd(ID_EX_Rd),
         .IF_Rs1(Inst[19:15]),
         .IF_Rs2(Inst[24:20]),
-        .Stall(),             // For internal use if needed.
+        .Stall(Stall),             // For internal use if needed.
         .IF_ID_Write(IF_ID_Write),
         .PcWrite(PcWrite)
     );

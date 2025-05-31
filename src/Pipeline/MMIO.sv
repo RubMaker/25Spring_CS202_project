@@ -43,8 +43,8 @@ module MMIO(
 );
 
     // Internal signal declarations (original MMIO-related logic)
-    logic [`LED_WIDTH] Led1 = 0, Led2 = 0;
-    logic [`DATA_WIDTH] Seg1 = 0;
+    logic [`LED_WIDTH] Led1, Led2;
+    logic [`DATA_WIDTH] Seg1;
     logic [`INFO_WIDTH] chars [`INFO_NUM];
     logic [`INFO_WIDTH] color [`INFO_NUM]; 
 

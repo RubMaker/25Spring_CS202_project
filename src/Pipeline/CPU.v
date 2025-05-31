@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 `include "Constants.vh"
 
-module CPU_Pipeline(
+module CPU(
     input  wire clk,mem_clk,          // Clock signal
     input  wire rst,          // Reset signal (active high) 
     input  wire [`SWCH_WIDTH] Switch1, Switch2,
@@ -36,6 +36,7 @@ module CPU_Pipeline(
     // IF/ID pipeline signals
     wire [31:0] IF_ID_PcOut;
     wire [31:0] IF_ID_InstOut;
+    wire [31:0] ID_PcOut;
     
     // ID stage signals
     wire [4:0] ID_Rd;
@@ -129,7 +130,6 @@ module CPU_Pipeline(
         .pc_in(current_pc),
         .IF_ID_Write(IF_ID_Write),
         .Branch(EX_BranchTaken),
-        .MemPC(), // Not used in this simplified version
         .IStall(ICacheStall),
         .ExtMemInst(ExtMemInst),
         .PcOut(IF_PcOut),
@@ -154,7 +154,7 @@ module CPU_Pipeline(
         .rst(rst),
         .Inst(IF_ID_InstOut),
         .PcIn(IF_ID_PcOut),
-        .PcOut(), // Not used in this version
+        .PcOut(ID_PcOut),
         .Rd(ID_Rd),
         .Imm(ID_Imm),
         .RegWrite(ID_RegWrite),
@@ -171,14 +171,15 @@ module CPU_Pipeline(
         .ID_EX_Rd(ID_EX_RdOut),
         .IF_ID_Write(IF_ID_Write),
         .Rs1Addr(ID_Rs1Addr),
-        .Rs2Addr(ID_Rs2Addr)
+        .Rs2Addr(ID_Rs2Addr),
+        .Stall(Stall)
     );
     
     // ID/EX Pipeline Register:
     ID_EX id_ex_reg(
         .clk(clk),
         .rst(rst),
-        .PcIn(IF_ID_PcOut),
+        .PcIn(ID_PcOut),
         .Rs1In(Rs1Data),
         .Rs2In(Rs2Data),
         .RdIn(ID_Rd),
