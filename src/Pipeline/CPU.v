@@ -97,7 +97,7 @@ module CPU(
     // Control signals are assumed to be passed (for example, RegWrite, etc.)
     // In this example, we assume the EX_MEM module packs the control signals inside itself.
     wire [2:0]       EX_MEM_WB_ctrl; // WB control (e.g. RegWrite signal)
-    wire [4:0] MEM_ctrl_out;    
+    wire [2:0] MEM_ctrl_out;    
     //////////////////////////////////////////////////////////////////////////////
     // MEM stage signals
     //////////////////////////////////////////////////////////////////////////////
@@ -264,7 +264,7 @@ module CPU(
         .rs1(ID_EX_rs1_out),
         .rs2(ID_EX_rs2_out),
         .ex_mem_rd(EX_MEM_RdOut),                // For forwarding
-        .ex_mem_regwrite(EX_MEM_WB_ctrl),         // For forwarding (WB control from later stage)
+        .ex_mem_regwrite(EX_MEM_WB_ctrl[0]),         // For forwarding (WB control from later stage)
         .ex_mem_aluresult(EX_MEM_ALU_result),     // For forwarding results
         .mem_wb_rd(MEM_WB_Rd),                    // For forwarding from MEM/WB stage
         .mem_wb_regwrite(MEM_WB_RegWrite),        // For forwarding
@@ -284,6 +284,7 @@ module CPU(
     // EX/MEM Pipeline Register
     //////////////////////////////////////////////////////////////////////////////
     // Propagate EX stage results and control signals to the MEM stage.
+    wire MemRegWrite;
     EX_MEM ex_mem_reg(
         .clk(clk),
         .rst(rst),
@@ -296,8 +297,8 @@ module CPU(
         .ALUres_out(EX_MEM_ALU_result),     // Forward ALU result to MEM stage
         .data2_out(EX_MEM_data2),           // Forward store data (if needed)
         .rd_out(EX_MEM_RdOut),              // Forward destination register to MEM stage
-        .MEM_ctrl_out(MEM_ctrl_out),                   // (Unused in this top-level)
-        .WB_ctrl_out(EX_MEM_WB_ctrl)         // WB control signal for forwarding (RegWrite)
+        .MEM_ctrl_out(EX_MEM_WB_ctrl),                   // (Unused in this top-level)
+        .WB_ctrl_out(MemRegWrite)         // WB control signal for forwarding (RegWrite)
     );
     
     //////////////////////////////////////////////////////////////////////////////
@@ -329,7 +330,7 @@ module CPU(
         .rst(rst),
         .stall(DCacheStall),            
         .MemResult(MEM_Result),
-        .MemRegWrite(EX_MEM_WB_ctrl[0]),    // Use WB control signal propagated from EX/MEM register
+        .MemRegWrite(MemRegWrite),    // Use WB control signal propagated from EX/MEM register
         .MemRd(EX_MEM_RdOut),
         .WbData(MEM_WB_Result),
         .WbRegWrite(MEM_WB_RegWrite),
