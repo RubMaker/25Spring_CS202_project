@@ -7,6 +7,9 @@ module CPU(
     input  wire [`SWCH_WIDTH] Switch1, Switch2,
     input  wire Button1, Button2, Button3, Button4, Button5,
     input  wire [`VGA_ADDRESS] VgaAddress,
+    input  wire [31:0] uart_addr;
+    input  wire [31:0] uart_data;
+    input  wire        uart_done;
 
     output wire [31:0] pc_out,        // Current program counter output
     output wire [31:0] inst_out,      // Current instruction output
@@ -16,6 +19,11 @@ module CPU(
     output wire [`INFO_WIDTH] ColorOut   // VGA color output (MMIO)
 );
 
+    wire [31:0] uart_mem_addr;
+    wire [31:0] uart_mem_date;
+
+    assign uart_mem_addr = uart_done ? MEM_MemAddr : uart_addr;
+    assign uart_mem_data = uart_done ? MEM_MemWriteData : uart_data;
     //////////////////////////////////////////////////////////////////////////////
     // Pipeline Control Signals
     //////////////////////////////////////////////////////////////////////////////
@@ -363,7 +371,7 @@ module CPU(
         .clkA(mem_clk),
         .clkB(mem_clk),
         .AddressA(current_pc),         // Instruction fetch address.
-        .AddressB(MEM_MemAddr),          // Data memory address.
+        .AddressB(uart_mem_addr),          // Data memory address.
         .WriteData(MEM_MemWriteData),    // Data to be written into memory.
         .EnableWriteB(MEM_MemWb),        // Write enable for memory operations.
         .Switch1(Switch1),
