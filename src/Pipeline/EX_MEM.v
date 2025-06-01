@@ -42,7 +42,7 @@ module EX_MEM (
   reg [31:0] ALUres;
   reg [31:0] data2;
   reg [4:0] rd;
-  reg [4:0] MEM_ctrl;
+  reg [2:0] MEM_ctrl;
   reg       WB_ctrl;
   // On the rising edge of the clock or asynchronous reset, update the pipeline registers.
   always @(posedge clk or posedge rst) begin

@@ -96,7 +96,7 @@ module CPU(
     wire [4:0]  EX_MEM_RdOut;
     // Control signals are assumed to be passed (for example, RegWrite, etc.)
     // In this example, we assume the EX_MEM module packs the control signals inside itself.
-    wire        EX_MEM_WB_ctrl; // WB control (e.g. RegWrite signal)
+    wire [2:0]       EX_MEM_WB_ctrl; // WB control (e.g. RegWrite signal)
     wire [4:0] MEM_ctrl_out;    
     //////////////////////////////////////////////////////////////////////////////
     // MEM stage signals
