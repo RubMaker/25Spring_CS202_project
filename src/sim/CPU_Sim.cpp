@@ -102,9 +102,9 @@ bool diff_check() {
 }
 
 void set_device() {
-    top->switches1 = 7;
-    top->switches2 = 4;
-    top->bt1 = 1;
+    top->Switch1 = 7;
+    top->Switch2 = 4;
+    top->Button1 = 1;
 }
 
 int main(int argc, char** argv) {
@@ -127,14 +127,14 @@ int main(int argc, char** argv) {
     uc_reg_write(uc, UC_RISCV_REG_GP, &uc_gp);
 
     // initialize vpi handles
-    pc = get_handle("TOP.CPU.pc_inst.pc");
-    for(int i = 0; i < 32; i++) regs[i] = vpi_handle_by_index(get_handle("TOP.CPU.id_inst.reg_inst.regs"), i);
-    for(int i = 0; i < 16383; i++) mem[i] = vpi_handle_by_index(get_handle("TOP.CPU.memory_inst.test_inst.mem"), i);
+    pc = get_handle("TOP.CPU.pc_module.pc");
+    for(int i = 0; i < 32; i++) regs[i] = vpi_handle_by_index(get_handle("TOP.CPU.reg_file.regs"), i);
+    for(int i = 0; i < 16383; i++) mem[i] = vpi_handle_by_index(get_handle("TOP.CPU.memory_inst.mem_inst.mem"), i);
 
     long long time = 0, uc_pc = 0;
 
     // load program
-    top->rst_n = 1;
+    top->rst = 0;
     top->uart_done = 0;
     vector<uint32_t> inst = load_program();
     top->uart_done = 1;
