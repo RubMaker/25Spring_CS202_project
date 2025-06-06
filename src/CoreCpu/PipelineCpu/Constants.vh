@@ -2,12 +2,6 @@
 `ifndef CONSTANTS_VH
 `define CONSTANTS_VH
 
-// Constants for NPC
-`define NPC_ADD4   3'b000
-`define NPC_BRANCH  3'b001
-`define NPC_JUMP    3'b010
-`define NPC_JALR 3'b100
-
 // Bus Widths
 `define DATA_LENGTH    32
 `define DATA_WIDTH    31:0

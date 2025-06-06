@@ -65,38 +65,38 @@ initial begin
     ALU_op = 4'b0;
     #10; // Initial delay
 
-    // // Test ADD operation
-    // test_operation(32'h00000005, 32'h00000003, `ALU_ADD, 32'h00000008);
-    // // Test SUB operation
-    // test_operation(32'h00000008, 32'h00000003, `ALU_SUB, 32'h00000005);
-    // // Test AND operation
-    // test_operation(32'h0000000F, 32'h000000F0, `ALU_AND, 32'h00000000);
-    // // Test OR operation
-    // test_operation(32'h0000000F, 32'h000000F0, `ALU_OR, 32'h000000FF);
-    // // Test XOR operation
-    // test_operation(32'h0000000F, 32'h000000F0, `ALU_XOR, 32'h000000FF);
-    // // Test SLL operation
-    // test_operation(32'h00000001, 32'd2, `ALU_SLL, 32'h00000004);
-    // // Test SRL operation
-    // test_operation(32'h00000004, 32'd2, `ALU_SRL, 32'h00000001);
-    // // Test SRA operation
-    // test_operation(32'h80000000, 32'd2, `ALU_SRA, 32'hE0000000);
-    // // Test SLT operation
-    // test_operation(32'h00000003, 32'h00000005, `ALU_SLT, 32'h00000001);
-    // // Test SLTU operation
-    // test_operation(32'h00000003, 32'h00000005, `ALU_SLTU, 32'h00000001);
-    // // Test MUL operation
-    // test_operation(32'h00000003, 32'h00000005, `ALU_MUL, 32'h0000000F);
-    // // Test MULH operation
-    // test_operation(32'h80000000, 32'h80000000, `ALU_MULH, 32'h40000000);
-    // // Test MULHSU operation
-    // test_operation(32'h80000000, 32'h80000000, `ALU_MULHSU, 32'hC0000000);
-    // // Test MULHU operation
-    // test_operation(32'h80000000, 32'h80000000, `ALU_MULHU, 32'h40000000);
-    // // Test DIV operation
-    // test_operation(32'h00000008, 32'h00000002, `ALU_DIV, 32'h00000004);
-    // // Test REM operation
-    // test_operation(32'h00000008, 32'h00000003, `ALU_REM, 32'h00000002);
+    // Test ADD operation
+    test_operation(32'h00000005, 32'h00000003, `ALU_ADD, 32'h00000008);
+    // Test SUB operation
+    test_operation(32'h00000008, 32'h00000003, `ALU_SUB, 32'h00000005);
+    // Test AND operation
+    test_operation(32'h0000000F, 32'h000000F0, `ALU_AND, 32'h00000000);
+    // Test OR operation
+    test_operation(32'h0000000F, 32'h000000F0, `ALU_OR, 32'h000000FF);
+    // Test XOR operation
+    test_operation(32'h0000000F, 32'h000000F0, `ALU_XOR, 32'h000000FF);
+    // Test SLL operation
+    test_operation(32'h00000001, 32'd2, `ALU_SLL, 32'h00000004);
+    // Test SRL operation
+    test_operation(32'h00000004, 32'd2, `ALU_SRL, 32'h00000001);
+    // Test SRA operation
+    test_operation(32'h80000000, 32'd2, `ALU_SRA, 32'hE0000000);
+    // Test SLT operation
+    test_operation(32'h00000003, 32'h00000005, `ALU_SLT, 32'h00000001);
+    // Test SLTU operation
+    test_operation(32'h00000003, 32'h00000005, `ALU_SLTU, 32'h00000001);
+    // Test MUL operation
+    test_operation(32'h00000003, 32'h00000005, `ALU_MUL, 32'h0000000F);
+    // Test MULH operation
+    test_operation(32'h80000000, 32'h80000000, `ALU_MULH, 32'h40000000);
+    // Test MULHSU operation
+    test_operation(32'h80000000, 32'h80000000, `ALU_MULHSU, 32'hC0000000);
+    // Test MULHU operation
+    test_operation(32'h80000000, 32'h80000000, `ALU_MULHU, 32'h40000000);
+    // Test DIV operation
+    test_operation(32'h00000008, 32'h00000002, `ALU_DIV, 32'h00000004);
+    // Test REM operation
+    test_operation(32'h00000008, 32'h00000003, `ALU_REM, 32'h00000002);
 
 
 
