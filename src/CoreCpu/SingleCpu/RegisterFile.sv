@@ -36,8 +36,8 @@ module RegisterFile(
         Registers[0] = 32'b0; // Register 0 is hardwired to 0
         Registers[1] = 32'b0; // Initialize other Registers to 0
         Registers[2] = `STAK_ADDRESS;
-        Registers[31] = `MMIO_ADDRESS;
-        for (int i = 3; i < 31; i++) begin
+        Registers[3] = `MMIO_ADDRESS;
+        for (int i = 4; i < 32; i++) begin
             Registers[i] = 32'b0;
         end
     end
@@ -47,8 +47,8 @@ module RegisterFile(
             Registers[0] <= 32'b0; // Register 0 is hardwired to 0
             Registers[1] <= 32'b0; // Initialize other Registers to 0
             Registers[2] <= `STAK_ADDRESS;
-            Registers[31] <= `MMIO_ADDRESS;
-            for (int i = 3; i < 31; i++) begin
+            Registers[3] <= `MMIO_ADDRESS;
+            for (int i = 4; i < 32; i++) begin
                 Registers[i] <= 32'b0;
             end
         end else if (RegWrite && WriteRegAddr != 5'b0) begin

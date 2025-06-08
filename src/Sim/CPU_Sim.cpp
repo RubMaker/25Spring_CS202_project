@@ -93,7 +93,7 @@ void run_one_cycle() {
 }
 
 vector<uint32_t> load_program() {
-    vector<char> data = read_binary("/home/wgx/computre_org/project/25Spring_CS202_project/src/Assembly/test_sim/test7.bin"); // modify the path to the binary file
+    vector<char> data = read_binary("/home/wgx/computre_org/project/25Spring_CS202_project/src/assembly/test_sim/test7.bin"); // modify the path to the binary file
     vector<unsigned int> inst;
     uint32_t concat_data, size = data.size() / 4;
 
@@ -131,7 +131,7 @@ bool diff_check() {
 void set_device() {
     top->Switch1 = 7;
     top->Switch2 = 4;
-    top->Button1 = 1;
+    top->Button_Confirm = 1;
 }
 void print_all_handles() {
     // 尝试常见的可能路径
@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
     for(int i = 0; i < 32; i++) regs[i] = vpi_handle_by_index(get_handle("TOP.CPU.regf_sl.Registers"), i);
     long long time = 0, uc_pc = 0;
     // load program
-    top->reset = 1;
+    top->reset = 0;
     top->UartOver = 0;
     vector<uint32_t> inst = load_program();
     top->UartOver = 1;

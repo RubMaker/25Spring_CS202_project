@@ -51,31 +51,31 @@ module Memory(
     
     //A only for read
     //B for read and write
-    // MemorySim test_inst(
-    //     .clka(~clkA),
-    //     .clkb(~clkB),
-    //     .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
-    //     .addrb(AddressB[ADDR_HIGH:ADDR_LOW]),
-    //     .write_datab(IsMMIO ? 0 : WriteData),
-    //     .dataa(ReDataA),
-    //     .datab(ReDataB),
-    //     .web(EnWB)
-    // );
-
-    Mem mem_inst(
+    MemorySim test_inst(
         .clka(~clkA),
         .clkb(~clkB),
         .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
         .addrb(AddressB[ADDR_HIGH:ADDR_LOW]),
-        .dina(0),
-        .dinb(IsMMIO ? 0 : WriteData),
-        .douta(ReDataA),
-        .doutb(ReDataB),
-        .ena(1),
-        .enb(1),
-        .wea(0),
+        .write_datab(IsMMIO ? 0 : WriteData),
+        .dataa(ReDataA),
+        .datab(ReDataB),
         .web(EnWB)
     );
+
+    // Mem mem_inst(
+    //     .clka(~clkA),
+    //     .clkb(~clkB),
+    //     .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
+    //     .addrb(AddressB[ADDR_HIGH:ADDR_LOW]),
+    //     .dina(0),
+    //     .dinb(IsMMIO ? 0 : WriteData),
+    //     .douta(ReDataA),
+    //     .doutb(ReDataB),
+    //     .ena(1),
+    //     .enb(1),
+    //     .wea(0),
+    //     .web(EnWB)
+    // );
 
     ExpAddressHandler exp_inst(
         .Address(AddressA),
