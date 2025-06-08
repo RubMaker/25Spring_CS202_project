@@ -110,7 +110,8 @@
 `define STAK_ADDRESS  32'h00007ffc
 `define EXCP_ADDRESS  32'h1c090000
 // VGA
-`define INFO_WIDTH   7:0
+`define COLOR_WIDTH  3:0
+/*`define INFO_WIDTH   7:0
 `define INFO_NUM   0:3071  // 96*32
 `define COLOR_WIDTH  3:0
 `define VGA_ADDRESS  11:0
@@ -148,7 +149,7 @@
 `define LBLUE_B 4'hE
 `define DBLUE_R 4'h5
 `define DBLUE_G 4'h7
-`define DBLUE_B 4'he
+`define DBLUE_B 4'he*/
 // Keyboard related
 `define KBPIN_WIDTH  7:0
 `define KBCODE_WIDTH 4:0 
@@ -156,8 +157,31 @@
 `define BPS_CNT 868
 `define MAX_DATA 32'h7ffffffc
 `define MAX_IDLE 16'hffff
-// VGA chars
-`define CHAR_0   128'h00000000000000000000000000000000  // left of a point
+
+// VGA
+`define COLOR_WIDTH  3:0
+`define H_SYNC_PULSE 10'd96
+`define H_BACK_PORCH 10'd48
+`define H_ACTIVE_TIME 10'd640
+`define H_FRONT_PORCH 10'd16
+`define H_LINE_PERIOD 10'd800
+`define V_SYNC_PULSE 10'd2
+`define V_BACK_PORCH 10'd33
+`define V_ACTIVE_TIME 10'd480
+`define V_FRONT_PORCH 10'd10
+`define V_FRAME_PERIOD 10'd525
+`define char_width 6'd32
+
+// VGA color constant
+`define BLACK 12'h000
+`define WHITE 12'hfff
+`define RED   12'hf00
+`define GREEN 12'h0f0
+`define BLUE  12'h00f
+`define YELLOW 12'hff0
+`define GOLDEN 12'hfc0
+
+/*`define CHAR_0   128'h00000000000000000000000000000000  // left of a point
 `define CHAR_1   128'h00000000000000010100000000000000  // left of a point
 `define CHAR_2   128'h00000000000000808000000000000000  // right of a point
 `define CHAR_3   128'h071f3f7f7fffffffffffff7f7f3f1f07  // left of a circle
@@ -305,6 +329,6 @@
 `define INC 4'b1100      // Encode of 'C'
 `define IND 4'b1101      // Encode of 'D'
 `define INE 4'b1110      // Encode of 'E'
-`define INF 4'b1111      // Encode of 'F'
+`define INF 4'b1111      // Encode of 'F'*/
 
 `endif 

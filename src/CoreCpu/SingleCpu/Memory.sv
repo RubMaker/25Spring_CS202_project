@@ -28,13 +28,11 @@ module Memory(
     input logic [`DATA_WIDTH] WriteData,        // Write data for port B
     input logic EnableWriteB,                   // Write enable for port B (active high)
     input logic [`SWCH_WIDTH] Switch1, Switch2,  // Input switches (MMIO)
-    input logic Button1, Button2,               // Input buttons (MMIO)
-    input logic Button3, Button4, Button5,       // Input buttons (MMIO)
-    input logic [`VGA_ADDRESS] VgaAddress,          // VGA display address (MMIO)
+    input logic Button_Confirm,
+    //input logic [`VGA_ADDRESS] VgaAddress,          // VGA display address (MMIO)
     output logic [`DATA_WIDTH] Seg1Out,          // 7-segment display output (MMIO)
     output logic [`LED_WIDTH] Led1Out, Led2Out,  // LED outputs (MMIO)
-    output logic [`INFO_WIDTH] CharOut,          // VGA character output (MMIO)
-    output logic [`INFO_WIDTH] ColorOut,         // VGA color output (MMIO)
+    output logic [`LED_WIDTH] VGA1Out,
     output logic [`DATA_WIDTH] ReadDataA,        // Read data output for port A
     output logic [`DATA_WIDTH] ReadDataB         // Read data output for port B
     // output logic IsMMIO,                     // Indicates if the address is MMIO
@@ -49,7 +47,7 @@ module Memory(
 
     //A only for read
     //B for read and write
-    MemorySim mem_inst(
+    /*MemorySim mem_inst(
         .clka(clkA),
         .clkb(clkB),
         .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
@@ -58,22 +56,22 @@ module Memory(
         .dataa(ReDataA),
         .datab(ReDataB),
         .web(EnWB)
-    );
+    );*/
 
-    // Mem mem_inst(
-    //     .clka(~clkA),
-    //     .clkb(~clkB),
-    //     .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
-    //     .addrb(AddressB[ADDR_HIGH:ADDR_LOW]),
-    //     .dina(0),
-    //     .dinb(IsMMIO ? 0 : WriteData),
-    //     .douta(ReDataA),
-    //     .doutb(ReDataB),
-    //     .ena(1),
-    //     .enb(1),
-    //     .wea(0),
-    //     .web(EnWB)
-    // );
+    blk_mem_gen_0 mem_inst(
+         .clka(~clkA),
+         .clkb(~clkB),
+         .addra(AddressA[ADDR_HIGH:ADDR_LOW]),
+         .addrb(AddressB[ADDR_HIGH:ADDR_LOW]),
+         .dina(0),
+         .dinb(IsMMIO ? 0 : WriteData),
+         .douta(ReDataA),
+         .doutb(ReDataB),
+         .ena(1),
+         .enb(1),
+         .wea(0),
+         .web(EnWB)
+   );
 
     ExpAddressHandler exp_inst(
         .Address(AddressA),
@@ -88,18 +86,18 @@ module Memory(
         .WriteData(WriteData),
         .Switch1(Switch1),
         .Switch2(Switch2),
-        .Button1(Button1),
+        /*.Button1(Button1),
         .Button2(Button2),
         .Button3(Button3),
         .Button4(Button4),
-        .Button5(Button5),
-        .VgaAddress(VgaAddress),
+        .Button5(Button5),*/
+        .Button_Confirm(Button_Confirm),
+
         .DataIo(DataIo),
         .Seg1Out(Seg1Out),
         .Led1Out(Led1Out),
         .Led2Out(Led2Out),
-        .CharOut(CharOut),
-        .ColorOut(ColorOut)
+        .VGA1Out(VGA1Out)
     );
 
     assign IsMMIO = (AddressB[31:16] == 16'hffff);

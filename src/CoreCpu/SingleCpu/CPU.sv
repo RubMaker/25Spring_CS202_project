@@ -25,22 +25,22 @@ module CPU (
     input logic [`DATA_WIDTH] UartAddress,
     input logic UartOver,
     input logic [`LED_WIDTH] Switch1,Switch2,
-    input logic Button1,Button2,Button3,Button4,Button5,
+    //input logic Button1,Button2,Button3,Button4,Button5,
+    input logic Button_Confirm,
     output logic [`LED_WIDTH] Led1,Led2,
     output logic [`DATA_WIDTH] Seg1Out,
-    input logic [`VGA_ADDRESS] VgaAddress,
-    output logic [`INFO_WIDTH] CharOut,
-    output logic [`INFO_WIDTH] ColorOut,
-    output logic [`DATA_WIDTH] Pc_test,
-    output logic [`DATA_WIDTH] Inst_test
+    output logic [`LED_WIDTH] VGA1Out
+    //input logic [`VGA_ADDRESS] VgaAddress,
+    //output logic [`INFO_WIDTH] CharOut,
+    //output logic [`INFO_WIDTH] ColorOut
+    //output logic [`DATA_WIDTH] Pc_test,
+    //output logic [`DATA_WIDTH] Inst_test
     // output logic [4:0] rs1,rs2,
     // output logic uncached,
     // output logic hit
 );
-    assign Pc_test = ThisPc;
-    assign Inst_test = FetchInstr;
     logic RealReset ;
-    assign RealReset = ~reset | ~UartOver;
+    assign RealReset = reset | ~UartOver;
     logic [`DATA_WIDTH] NextPc,ThisPc;
     logic [`DATA_WIDTH] MemInstr,MemData;
     logic [`DATA_WIDTH] UartMemAddress,UartMemData;
@@ -51,6 +51,7 @@ module CPU (
     assign  rs1 = FetchInstr[19:15];
     assign  rs2 = FetchInstr[24:20];
     assign  rd  = FetchInstr[11:7];
+    wire [31:0] segout;
     ProgramCounter pc_sl (
         .clk(clk),
         .reset(RealReset),
@@ -176,16 +177,19 @@ module CPU (
 
         .Switch1(Switch1),
         .Switch2(Switch2),
-        .Button1(Button1),
+        /*.Button1(Button1),
         .Button2(Button2),
         .Button3(Button3),
         .Button4(Button4),
-        .Button5(Button5),
+        .Button5(Button5),*/
+        .Button_Confirm(Button_Confirm),
         .Led1Out(Led1),
         .Led2Out(Led2),
         .Seg1Out(Seg1Out),
-        .VgaAddress(VgaAddress),
-        .CharOut(CharOut),
-        .ColorOut(ColorOut)
+        //.VgaAddress(VgaAddress),
+        //.CharOut(CharOut),
+        //.ColorOut(ColorOut)
+        .VGA1Out(VGA1Out)
     );
+    //assign Seg1Out = FetchInstr;
 endmodule 

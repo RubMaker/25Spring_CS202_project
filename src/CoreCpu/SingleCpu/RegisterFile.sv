@@ -22,7 +22,7 @@
 
 
 module RegisterFile(
-    input logic clk,
+    input logic clk,//neg
     input logic reset,
     input logic [4:0] ReadRegAddr1,ReadRegAddr2,// support read from two Registers
     input logic [4:0] WriteRegAddr,// support write to one register
@@ -35,9 +35,9 @@ module RegisterFile(
     initial begin
         Registers[0] = 32'b0; // Register 0 is hardwired to 0
         Registers[1] = 32'b0; // Initialize other Registers to 0
-        // Registers[2] = `STAK_ADDRESS;
-        Registers[3] = `MMIO_ADDRESS;
-        for (int i = 4; i < 32; i++) begin
+        Registers[2] = `STAK_ADDRESS;
+        Registers[31] = `MMIO_ADDRESS;
+        for (int i = 3; i < 31; i++) begin
             Registers[i] = 32'b0;
         end
     end
@@ -47,8 +47,8 @@ module RegisterFile(
             Registers[0] <= 32'b0; // Register 0 is hardwired to 0
             Registers[1] <= 32'b0; // Initialize other Registers to 0
             Registers[2] <= `STAK_ADDRESS;
-            Registers[3] <= `MMIO_ADDRESS;
-            for (int i = 4; i < 32; i++) begin
+            Registers[31] <= `MMIO_ADDRESS;
+            for (int i = 3; i < 31; i++) begin
                 Registers[i] <= 32'b0;
             end
         end else if (RegWrite && WriteRegAddr != 5'b0) begin
@@ -56,7 +56,7 @@ module RegisterFile(
         end
     end
     // Read operations are combinational
-    assign ReadData1 = (ReadRegAddr1 == 5'b0 || reset) ? 32'b0 : Registers[ReadRegAddr1];
-    assign ReadData2 = (ReadRegAddr2 == 5'b0 || reset) ? 32'b0 : Registers[ReadRegAddr2];
+    assign ReadData1 = (ReadRegAddr1 == 5'b0) ? 32'b0 : Registers[ReadRegAddr1];
+    assign ReadData2 = (ReadRegAddr2 == 5'b0) ? 32'b0 : Registers[ReadRegAddr2];
 endmodule
 
